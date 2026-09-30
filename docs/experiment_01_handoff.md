@@ -4,6 +4,25 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H5: Stage 3 frozen → user runs locally → Opus final interpretation (2026-09-30)
+
+```text
+MODEL HANDOFF — Stage 3 frozen and ready for the user to run locally
+Completed: C6–C8 (D26), 61 tests pass, frozen config stage_confirmatory.yaml (sha256 da9c7d9a1aa20dabded1485d13494ad016d110ae9bfe9abc12edfec5fb118857,
+  commit 9ded7a7, code hash 9369a71c…), dry-run 108.5 CPU-h; local PowerShell instructions in docs/experiment_01_stage3_local_run.md.
+Next task: NOT for a model yet. The USER runs the confirmatory matrix on their Windows machine (~27 h on 4 workers) and pushes
+  results/experiment_01/confirmatory/. Afterwards Opus reads summary.json/summary.md (PH1–PH6 verdicts), the failure accounting and the
+  manifest, and writes the final interpretation and limitations (docs/experiment_01_final_report.md).
+Target: Opus 5.5, High, Plan Mode (after the results are pushed)
+Reason: Evaluate exactly which claims the results support; final scientific interpretation.
+Switch: Manual (no session control for changing the model is exposed).
+Approval: Stage 3 protocol approved (D23–D25); no further Stage 3 approval is needed to run the frozen config. No protocol change is
+  permitted after seeing results; any failure that needs a scientific revision returns to Opus and the user.
+Resume action: When the user has pushed the results: `Switched to Opus; final interpretation`.
+```
+
+---
+
 ## MODEL HANDOFF — H4: Stage 3 approved → pre-freeze corrections, freeze, local-run instructions (2026-09-30)
 
 ```text
