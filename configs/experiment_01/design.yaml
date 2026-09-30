@@ -49,3 +49,13 @@ fit:
     sigma2_F: 0.05
     tau_F: 8.0
     sigma_M: {ind: 0.5, common: 0.2}
+identifiability:
+  points:                             # interior parameter points at which the observable map is differentiated
+    generating: {}
+    alt_interior: {sigma2_F: 0.04, tau_F: 20.0, tau_R: 3.0, phi: 0.3}
+    mde: {sigma2_F: 0.04}             # provisional minimum detectable effect, other parameters as generating
+  fd_steps: [1.0e-4, 1.0e-5]
+  score_learners: 20000
+  weak_rel_sv: 1.0e-4                 # flag: smallest/largest singular value below this
+  rank_rel_sv: 1.0e-8                 # numerical rank threshold
+  N_reference: [300, 1000]

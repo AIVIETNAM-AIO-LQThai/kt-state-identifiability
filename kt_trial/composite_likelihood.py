@@ -139,23 +139,26 @@ def composite_loglik(theta: Theta, templates: list[Template], pc: PairCounts, gr
     return ll, g_nat, diag
 
 
-def learner_scores_nat(theta: Theta, templates: list[Template], Y: np.ndarray, tid: np.ndarray, chunk=500) -> np.ndarray:
+def learner_scores_nat(theta: Theta, templates: list[Template], Y: np.ndarray, tid: np.ndarray, chunk=400) -> np.ndarray:
     """Per-learner composite scores (N, Q) w.r.t. the natural parameter vector."""
+    import scipy.sparse as sp
     T = Y.shape[1]
     iu, ju = np.triu_indices(T, 1)
+    P = len(iu)
     pj = pair_quantities(theta, templates, iu, ju)
     p, dp = cell_probs_and_grads(pj.a[:, iu], pj.a[:, ju], pj.rho)       # (G,P,4), (G,P,4,3)
     dlogp = dp / np.maximum(p, P_FLOOR)[..., None]
+    Iu = sp.csr_matrix((np.ones(P), (np.arange(P), iu)), shape=(P, T))
+    Ju = sp.csr_matrix((np.ones(P), (np.arange(P), ju)), shape=(P, T))
     S = np.zeros((Y.shape[0], pj.da.shape[2]))
+    ar = np.arange(P)[None, :]
     for g in range(len(templates)):
         idx = np.flatnonzero(tid == g)
         for s in range(0, len(idx), chunk):
             ii = idx[s:s + chunk]
             y = Y[ii].astype(np.int64)
             cell = cell_index(y[:, iu], y[:, ju])                        # (n,P)
-            wcell = np.take_along_axis(dlogp[g][None].repeat(len(ii), 0), cell[..., None, None], axis=2)[:, :, 0, :]
-            wobs = np.zeros((len(ii), T))
-            for j in range(len(ii)):
-                wobs[j] = np.bincount(iu, weights=wcell[j, :, 0], minlength=T) + np.bincount(ju, weights=wcell[j, :, 1], minlength=T)
-            S[ii] = wobs @ pj.da[g] + wcell[:, :, 2] @ pj.drho[g]
+            w = dlogp[g][ar, cell]                                       # (n,P,3)
+            wobs = (Iu.T @ w[:, :, 0].T).T + (Ju.T @ w[:, :, 1].T).T     # (n,T)
+            S[ii] = wobs @ pj.da[g] + w[:, :, 2] @ pj.drho[g]
     return S
