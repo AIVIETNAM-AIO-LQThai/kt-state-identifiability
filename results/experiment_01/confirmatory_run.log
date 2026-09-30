@@ -1,0 +1,6 @@
+stage=confirmatory config_hash=1b1307a48a5a results_dir=results/experiment_01/confirmatory/1b1307a48a
+job matrix: {'fit': 160, 'null_rep': 4720, 'lboot_rep': 50}  optimizer starts: {'fit': 2400, 'null_rep': 47200, 'lboot_rep': 100} (total 49700)
+estimated cost: 108.48 CPU-h, ~1627 min wall on 4 workers
+[phase1] 160 jobs to run (0 already valid/recorded)
+  fit__S1__N300__r0 ok 95s  [1 run, 0 error, 1.6 min]
+  fit__S1__N300__r1 ok 100s  [2 run, 0 error, 1.7 min]
