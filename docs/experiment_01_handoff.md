@@ -4,6 +4,33 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H2c: criterion-2 decision → implementation, re-smoke, Stage 2 (2026-09-30)
+
+```text
+MODEL HANDOFF — D22 decided (Newton-decrement certificate replaces the raw-gradient clause)
+Completed: Opus decision D22 (docs/experiment_01_decisions.md; plan addendum "H2b OPUS DECISION"), user-approved. Evidence:
+  active Hessian PD in 8/8 read-only fits, Newton decrement 7.6e-10 to 6.8e-9, raw-gradient flag spurious at N=300.
+Next task:
+  (1) Implement D22 in fit.py: compute the certificate on the selected solution only (reuse the B1 certificate for an
+      embedded-null B2); record newton_decrement, hessian_min_eig, hessian_not_pd, the active coordinate names and the raw
+      gradient; replace the large_projected_gradient flag with newton_decrement_large; surface the max decrement and the
+      hessian_not_pd count in summarize.
+  (2) Tests: rewrite test_all_b2_starts_reach_the_same_optimum_on_fixed_n300_dataset to assert decrement <= 1e-3; add a
+      decrement-vs-actual-ll-gap test (within 20%, small displaced point) and a hessian_not_pd test (monkeypatched H).
+  (3) Run the full suite, then the re-smoke (C5) into a fresh results dir; update the smoke report with a before/after table.
+  (4) Check unblock criteria 1–5 (criterion 2 as revised in D22). If all pass, run Stage 2
+      (configs/experiment_01/stage_diagnostic.yaml, B=49; dry-run 15.2 CPU-h), summarize, write
+      docs/experiment_01_diagnostic_report.md, and hand off (H3) to Opus.
+Target: Sonnet 5.5, Medium (High for the D22 numerics and tests), execution mode
+Reason: Implementing an approved decision and executing the pre-approved bounded Stage 2 batch.
+Switch: Manual (no session control for changing the model is exposed).
+Approval: D22 approved; Stage 2 approved with B=49 once the criteria pass; Stage 3 NOT approved.
+Resume action: Implement D22 and its tests, run the full suite and the re-smoke, check the criteria, then Stage 2.
+  Escalate to Opus on any criterion failure, hessian_not_pd outside the allowance, or single-start-best rate > 20% in a cell.
+```
+
+---
+
 ## MODEL HANDOFF — H2b: escalation to Opus (unblock criterion 2) (2026-09-30)
 
 ```text

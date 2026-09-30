@@ -302,3 +302,41 @@ Sonnet stops and reports if a dry-run projection exceeds 20 CPU-h.
 0. Opus (now in execution mode) persists this review: an H1 entry in `docs/experiment_01_handoff.md` (verdict, C1–C5, unblock criteria), D19–D21 in the decision log, and the review into `docs/experiment_01_plan.md`. Then Opus commits, pushes and emits the H2 handoff.
 1. Hand off to Sonnet (Medium; High for C1/C4) and implement C1–C5.
 2. Sonnet checks the unblock criteria. If all pass, Stage 2 runs as approved or as budget-amended, followed by the H3 handoff to Opus. If any fails, Sonnet escalates to Opus.
+
+---
+
+## Addendum — H2b OPUS DECISION — unblock criterion 2, gradient clause (2026-09-30)
+
+**Problem.** My H1 criterion "absolute projected gradient ≤ 1e-2" is not scale-aware. The log-likelihood is about 2e6, and
+the Hessian eigenvalues on the free coordinates span roughly 1e0–1e3 (weak directions such as τ_F) up to about 7e7 (Σ_M
+Cholesky coordinates). Double-precision resolution of the objective, about 5e-10 log-lik, therefore leaves raw gradients of
+0.02–0.18 even at the optimum. Sonnet correctly escalated rather than weakening the test.
+
+**Evidence (read-only, 8 fits: S1/S2 × N=64/300 × B1/B2, current code 5d1f4ea).**
+- **Hessian:** positive definite on the active coordinates in all 8 fits. The smallest eigenvalue is 0.16, on a null B2 fit with a weak τ_F.
+- **Newton decrement:** g′H⁻¹g/2 between 7.6e-10 and 6.8e-9 log-lik units.
+- **False alarms:** the raw-gradient flag fires on every N=300 fit (|g| 0.017–0.052).
+- **Null-case optima:** under the null, 3 of 5 B2 starts reach the best and the others are genuine secondary τ_F optima, as expected (L4).
+
+**Decision D22.**
+1. **Replace the flag.** Remove the `large_projected_gradient` flag and its gradient clause. Add a **Newton-decrement certificate**
+   on the selected solution only, not every start: `newton_decrement = ½ gᵀH⁻¹g` in absolute log-lik units. It is computed on
+   the active free coordinates (inside bounds; τ_F excluded when σ²_F = 0, τ_R excluded when inactive). H is the symmetrised
+   central-difference Jacobian of the analytic gradient (step 1e-5·max(1,|x|)), about one gradient per active coordinate.
+   The flag is `newton_decrement_large` if the decrement exceeds **1e-3**. If H on the active set is not positive definite,
+   record `hessian_not_pd` and report the decrement as NA. The raw absolute projected gradient stays as a recorded diagnostic.
+   For an embedded-null B2, reuse the B1 certificate.
+2. **Revised unblock criterion 2 (re-smoke):**
+   - 0 job errors, and every fit converged (scipy CONVERGENCE message, or embedded null).
+   - Newton decrement ≤ 1e-3 in every fit with a positive-definite active Hessian.
+   - `hessian_not_pd` is allowed only for B2 fits with σ̂²_F < 0.02, where τ_F may be flat. Any other occurrence escalates to Opus.
+   - In every S1 B2 fit, at least 3 of 5 starts are within 0.01 log-lik of the best.
+3. **Tests.** Rewrite the failing slow test to assert decrement ≤ 1e-3, not the raw gradient. Add a unit test: at a point displaced
+   slightly from an optimum, the decrement matches the actual log-lik gap within 20% on a small dataset. Add a test that
+   `hessian_not_pd` is set when H is made indefinite (monkeypatched H).
+4. **Unchanged:** criteria 1, 3, 4 and 5, D19 (stopping rule), Stage 2 as approved (B=49), and every scientific setting.
+5. **Cost:** about 18 gradient evaluations (~1 s) per selected fit. That is negligible against the ~66 s B2 fit, and the 15.2 CPU-h Stage 2 projection stands.
+
+This changes a numerical diagnostic, not the model, estimator, inference or thresholds. Opus decides it within the
+routing policy, and it is shown here for your approval. Next: Opus persists D22 and the H2c handoff, then hands off to
+Sonnet, which implements D22, runs the full suite, the re-smoke (C5) and the criteria check, then Stage 2.
