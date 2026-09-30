@@ -78,7 +78,17 @@ def _dataset_specs(stage_cfg, section):
         return []
     out = []
     for d in spec.get("datasets", []):
-        out.append(dict(scenario=d["scenario"], N=d.get("N", stage_cfg["N_list"][0]), rep=d["rep"]))
+        # compact forms: scenario | scenarios, N | N_list, rep | reps (list) | rep_range [lo, hi) ; B per entry
+        scen = d["scenarios"] if "scenarios" in d else [d["scenario"]]
+        Ns = d["N_list"] if "N_list" in d else [d.get("N", stage_cfg["N_list"][0])]
+        if "rep_range" in d:
+            reps = list(range(d["rep_range"][0], d["rep_range"][1]))
+        else:
+            reps = d["reps"] if "reps" in d else [d["rep"]]
+        for s_ in scen:
+            for N_ in Ns:
+                for r_ in reps:
+                    out.append(dict(scenario=s_, N=N_, rep=r_, B=d.get("B", spec["B"])))
     return out
 
 
@@ -86,9 +96,9 @@ def expand_jobs(stage_cfg: dict) -> dict:
     fit = [dict(kind="fit", scenario=s, N=N, rep=r) for s in stage_cfg["scenarios"] for N in stage_cfg["N_list"]
            for r in range(stage_cfg["replications"])]
     null = [dict(kind="null_rep", b=b, **d) for d in _dataset_specs(stage_cfg, "null_bootstrap")
-            for b in range(stage_cfg["null_bootstrap"]["B"])]
+            for b in range(d["B"])]
     lb = [dict(kind="lboot_rep", b=b, **d) for d in _dataset_specs(stage_cfg, "learner_bootstrap")
-          for b in range(stage_cfg["learner_bootstrap"]["B"])]
+          for b in range(d["B"])]
     return {"phase1": fit, "phase2": null + lb}
 
 

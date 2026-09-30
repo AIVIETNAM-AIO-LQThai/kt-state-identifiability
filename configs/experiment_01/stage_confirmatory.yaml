@@ -1,0 +1,28 @@
+# Stage 3 CONFIRMATORY protocol -- FROZEN (decisions D23-D25, approved by the user on 2026-09-30).
+# Do not edit after freezing: the runner requires `frozen: true` and `--frozen-sha256 <sha256 of this file>`,
+# and results are stored under a directory named by the hash of this configuration.
+# Claims are limited to statistical recovery of a shared transient latent state F under the simulated assumptions.
+stage: confirmatory
+frozen: true
+master_seed: 20261201
+scenarios: [S1, S2, S8, S8n]
+N_list: [300, 1000]              # N = number of learners used for parameter fitting (held-out learners are extra)
+replications: 20
+models: [B0, B1, B2]
+n_starts: 5
+heldout_N: 300                   # separate held-out learners per dataset (own seed stream); totals reported separately
+sandwich: true
+null_bootstrap:                  # boundary-aware parametric bootstrap of the composite LR (B2 vs B1); alpha = 0.05
+  B: 19
+  datasets:
+    - {scenarios: [S2, S8n], N_list: [300, 1000], rep_range: [0, 10], B: 99}   # false-positive behaviour (PH3, PH4)
+    - {scenarios: [S1, S8],  N_list: [300, 1000], rep_range: [0, 10], B: 19}   # power (PH2); min attainable p = 0.05
+learner_bootstrap:               # sandwich check
+  B: 50
+  model: B2
+  datasets:
+    - {scenario: S1, N: 1000, rep: 0}
+# dry-run cost model only (not part of the protocol): per-start seconds scaled to the measured Stage 2 job times
+# (fit job 110 s, null replicate 78 s; N = 1000 not yet timed, +-30 %)
+cost_model_sec_per_start: {B0: 3.1, B1: 6.4, B2: 9.4}
+budget: {max_cpu_hours: 120, workers: 4}

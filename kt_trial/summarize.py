@@ -140,7 +140,9 @@ def summarize(rd) -> dict:
                     c = cov.setdefault(n, {"cond_covered": 0, "cond_n": 0, "uncond_covered": 0, "uncond_n": 0})
                     c["uncond_n"] += 1
                     d = sw["params"].get(n) if sw and sw.get("status") == "ok" else None
-                    if d is not None:
+                    if d is not None and d.get("ci95") is None:
+                        c["n_ci_na"] = c.get("n_ci_na", 0) + 1          # C6: counted as non-covering, not in the conditional set
+                    elif d is not None:
                         hit = int(d["ci95"][0] <= truth[n] <= d["ci95"][1])
                         c["cond_n"] += 1; c["cond_covered"] += hit; c["uncond_covered"] += hit
             mc["sandwich_coverage"] = {n: {**c, "conditional_cp95": clopper_pearson(c["cond_covered"], c["cond_n"]),
@@ -186,9 +188,125 @@ def summarize(rd) -> dict:
             byscn[k.split("|")[0]].append(v["reject_at_alpha"])
         out["null_test_rejection_rates"] = {s: {"rejections": int(sum(v)), "n_datasets": len(v), "rate": sum(v) / len(v),
                                                 "cp95": clopper_pearson(int(sum(v)), len(v))} for s, v in byscn.items()}
+    out["pre_registered"] = pre_registered(groups, out["null_tests"])
     write_json_atomic(rd / "summary.json", out)
     (rd / "summary.md").write_text(to_markdown(out), encoding="utf-8")
     return out
+
+
+# ---------------------------------------------------------------------------------------------
+# Pre-registered decision rules PH1-PH6 (decision D24; fixed before any Stage 3 data existed).
+# 95 % Monte Carlo CI = estimate +- 1.96 * MCSE; rates carry Clopper-Pearson 95 % limits.
+# ---------------------------------------------------------------------------------------------
+Z = 1.959963984540054
+NEAR_WHITE_TAU = 0.4          # minutes: below the shortest design lag
+DESIGN_SE_SIGMA2F = {"300": 0.0338, "1000": 0.0185}      # audit: predicted Godambe SE of sigma2_F at sigma2_F = 0.04
+
+
+def _bias_verdict(bias, mcse, tol=BIAS_TOL_SIGMA2F):
+    lo, hi = bias - Z * mcse, bias + Z * mcse
+    if lo >= -tol and hi <= tol:
+        v = "pass"
+    elif lo > tol or hi < -tol:
+        v = "fail"
+    else:
+        v = "inconclusive"
+    return {"bias": bias, "mcse": mcse, "mc_ci95": [lo, hi], "tolerance": tol, "verdict": v}
+
+
+def _rate(k, n):
+    return {"k": int(k), "n": int(n), "rate": (k / n) if n else None, "cp95": clopper_pearson(int(k), int(n))}
+
+
+def _mean_ci(v):
+    v = np.asarray(v, float)
+    n = len(v)
+    m = float(v.mean()) if n else float("nan")
+    se = float(v.std(ddof=1) / np.sqrt(n)) if n > 1 else float("nan")
+    return {"mean": m, "mcse": se, "n": n, "mc_ci95": [m - Z * se, m + Z * se]}
+
+
+def pre_registered(groups: dict, null_tests: dict) -> dict:
+    """groups[(scenario, N)] -> list of fit-job results; null_tests[key] -> null_summary + dataset info."""
+    out = {"rules": "D24 (docs/experiment_01_decisions.md); thresholds fixed before Stage 3 data", "PH": {}}
+    Ns = sorted({N for (_, N) in groups})
+
+    def b2fits(sid, N):
+        return [r["fits"]["B2"] for r in groups.get((sid, N), []) if r["fits"]["B2"]["status"] != "failed"]
+
+    def sigma_errs(sid, N):
+        return [f["errors"]["sigma2_F"] for f in b2fits(sid, N)]
+
+    def null_by(sid, N=None):
+        return [v for k, v in null_tests.items() if k.split("|")[0] == sid and (N is None or k.split("|")[1] == f"N={N}")]
+
+    # PH1 (S1) and PH5 (S8): bias of sigma2_F
+    for ph, sid in (("PH1", "S1"), ("PH5", "S8")):
+        cells = {}
+        for N in Ns:
+            e = sigma_errs(sid, N)
+            if len(e) > 1:
+                cells[f"N={N}"] = {**_bias_verdict(float(np.mean(e)), float(np.std(e, ddof=1) / np.sqrt(len(e)))),
+                                   "n_fits": len(e), "rmse": float(np.sqrt(np.mean(np.square(e)))), "sd": float(np.std(e, ddof=1))}
+        out["PH"][ph] = {"scenario": sid, "cells": cells}
+    # PH2: power of the boundary-aware test in S1
+    out["PH"]["PH2"] = {"scenario": "S1", "cells": {
+        f"N={N}": _rate(sum(bool(v["reject_at_alpha"]) for v in null_by("S1", N)), len(null_by("S1", N))) for N in Ns if null_by("S1", N)}}
+    # PH3 (S2) and PH4 (S8n): false-positive behaviour
+    for ph, sid in (("PH3", "S2"), ("PH4", "S8n")):
+        nt = null_by(sid)
+        k, n = sum(bool(v["reject_at_alpha"]) for v in nt), len(nt)
+        r = _rate(k, n)
+        allfits = [f for N in Ns for f in b2fits(sid, N)]
+        s2 = np.array([f["theta"]["sigma2_F"] for f in allfits]) if allfits else np.array([])
+        nw = [f for f in allfits if f["theta"]["sigma2_F"] > 1e-6 and f["theta"]["tau_F"] < NEAR_WHITE_TAU]
+        out["PH"][ph] = {"scenario": sid, "null_test_rejections": r,
+                         "verdict": ("evidence of excess false positives" if n and r["cp95"][0] > 0.05 else
+                                     f"no evidence of excess false positives (CP upper bound {r['cp95'][1]:.2f})") if n else "no null tests",
+                         "sigma2_F_hat_distribution": {"n_fits": len(s2), "share_at_zero": float(np.mean(s2 <= 1e-6)) if len(s2) else None,
+                                                       "mean": float(s2.mean()) if len(s2) else None,
+                                                       "p90": float(np.quantile(s2, 0.9)) if len(s2) else None},
+                         "near_white_share": _rate(len(nw), len(allfits))}
+    # PH6: held-out pairwise composite score, B2 - B1
+    ph6 = {}
+    for sid, kind in (("S1", "improvement"), ("S2", "spurious superiority"), ("S8n", "spurious superiority")):
+        for N in Ns:
+            v = [r["prediction"]["pairwise_composite_log_score"]["B2-B1"]["mean"] for r in groups.get((sid, N), [])
+                 if r["prediction"].get("pairwise_composite_log_score", {}).get("B2-B1")]
+            if len(v) > 1:
+                ci = _mean_ci(v)
+                ph6[f"{sid}|N={N}"] = {**ci, "claim": kind, "positive_ci": bool(ci["mc_ci95"][0] > 0),
+                                       "verdict": (f"{kind}: yes" if ci["mc_ci95"][0] > 0 else f"{kind}: not shown")}
+    out["PH"]["PH6"] = ph6
+    # descriptive extras
+    out["near_white_share_by_scenario"] = {
+        sid: _rate(sum(1 for N in Ns for f in b2fits(sid, N) if f["theta"]["sigma2_F"] > 1e-6 and f["theta"]["tau_F"] < NEAR_WHITE_TAU),
+                   sum(len(b2fits(sid, N)) for N in Ns)) for sid in sorted({s for (s, _) in groups})}
+    out["mde_design_based_detectability"] = {
+        "note": "MDE sigma2_F = 0.04 is NOT a confirmatory criterion (D21/D24). Design-based predicted SE at sigma2_F = 0.04:",
+        "predicted_se": DESIGN_SE_SIGMA2F,
+        "empirical_sd_sigma2F_hat_in_S1": {f"N={N}": (float(np.std(sigma_errs("S1", N), ddof=1)) if len(sigma_errs("S1", N)) > 1 else None) for N in Ns}}
+    return out
+
+
+def pre_registered_markdown(pr: dict) -> list:
+    L = ["## Pre-registered decision rules (D24)", "",
+         "Bias verdicts use the 95 % Monte Carlo CI (bias +- 1.96 MCSE) against +-0.04; rates use Clopper-Pearson 95 % limits.", ""]
+    for ph in ("PH1", "PH5"):
+        d = pr["PH"][ph]
+        for cell, v in d["cells"].items():
+            L.append(f"- **{ph}** ({d['scenario']} {cell}, {v['n_fits']} fits): bias {v['bias']:.4f}, MCSE {v['mcse']:.4f}, MC CI [{v['mc_ci95'][0]:.4f}, {v['mc_ci95'][1]:.4f}] -> **{v['verdict']}** (RMSE {v['rmse']:.4f}, SD {v['sd']:.4f})")
+    for cell, v in pr["PH"]["PH2"]["cells"].items():
+        L.append(f"- **PH2** (S1 {cell}): boundary-aware test rejects {v['k']}/{v['n']} (CP95 [{v['cp95'][0]:.2f}, {v['cp95'][1]:.2f}])")
+    for ph in ("PH3", "PH4"):
+        d = pr["PH"][ph]; r = d["null_test_rejections"]; s = d["sigma2_F_hat_distribution"]; nw = d["near_white_share"]
+        L.append(f"- **{ph}** ({d['scenario']}, sigma2_F = 0): rejects {r['k']}/{r['n']} (CP95 [{r['cp95'][0]:.2f}, {r['cp95'][1]:.2f}]) -> **{d['verdict']}**; "
+                 f"sigma2_F-hat at 0 in {_f(s['share_at_zero'],2)}, mean {_f(s['mean'],4)}, p90 {_f(s['p90'],4)}; near-white (sigma2_F-hat > 0 and tau_F-hat < {NEAR_WHITE_TAU} min) {nw['k']}/{nw['n']}")
+    for cell, v in pr["PH"]["PH6"].items():
+        L.append(f"- **PH6** ({cell}): held-out pairwise composite B2-B1 = {v['mean']:.3f} per learner, MCSE {_f(v['mcse'],3)}, MC CI [{v['mc_ci95'][0]:.3f}, {v['mc_ci95'][1]:.3f}] -> {v['verdict']}")
+    m = pr["mde_design_based_detectability"]
+    L += ["", f"MDE (descriptive only): {m['note']} {m['predicted_se']}; empirical SD of sigma2_F-hat in S1: {m['empirical_sd_sigma2F_hat_in_S1']}", ""]
+    return L
 
 
 def _f(x, d=3):
@@ -244,6 +362,8 @@ def to_markdown(s: dict) -> str:
         for k, v in s["learner_bootstrap"].items():
             L.append(f"- {k}: replicates ok {v['n_ok']}/{v['n_ok']+v['n_failed']}; bootstrap SD {({n: round(x,4) for n,x in v['sd'].items()})}; sandwich SE {v['sandwich_se']}")
         L.append("")
+    if s.get("pre_registered"):
+        L += pre_registered_markdown(s["pre_registered"])
     if s["job_accounting"]["errors"]:
         L += ["## Job errors", ""] + [f"- {e['job']}: {e['error']}" for e in s["job_accounting"]["errors"]] + [""]
     return "\n".join(L)

@@ -34,6 +34,13 @@ def _active_coords(pm: ParamMap, x, tol):
     return act
 
 
+def variance_wald_ci(est: float, se: float):
+    """Log-scale Wald 95 % interval for a variance; None (NA) when est <= 2*SE, i.e. too close to the boundary (C6)."""
+    if est <= 2.0 * se:
+        return None
+    return est * np.exp(-Z975 * se / est), est * np.exp(Z975 * se / est)
+
+
 def sandwich(fit: dict, templates: list[Template], ds: Dataset, cfg_fit: dict, K: int) -> dict:
     """Godambe covariance V = H^-1 J H^-1 / N in free coordinates of the active parameters, plus scalar SEs."""
     if fit.get("status") == "failed":
@@ -80,7 +87,11 @@ def sandwich(fit: dict, templates: list[Template], ds: Dataset, cfg_fit: dict, K
         elif name == "phi":
             sx = np.sqrt(max(Vfull[col, col], 0.0)); lo = 1 / (1 + np.exp(-(x[col] - Z975 * sx))); hi = 1 / (1 + np.exp(-(x[col] + Z975 * sx)))
         elif name.startswith("sigma2"):
-            lo, hi = est * np.exp(-Z975 * se / est), est * np.exp(Z975 * se / est)   # log-scale interval for a variance > 0
+            ci = variance_wald_ci(est, se)
+            if ci is None:                          # C6: a Wald interval is not meaningful this close to the boundary
+                res[name] = {"estimate": est, "se": se, "ci95": None, "ci_na": "near boundary (estimate <= 2*SE)"}
+                continue
+            lo, hi = ci
         else:
             lo, hi = est - Z975 * se, est + Z975 * se
         res[name] = {"estimate": est, "se": se, "ci95": [float(lo), float(hi)]}

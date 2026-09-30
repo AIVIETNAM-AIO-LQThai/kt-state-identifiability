@@ -1,0 +1,2 @@
+# Frozen protocol files must have identical bytes on every platform (their sha256 is checked by the runner).
+configs/experiment_01/*.yaml text eol=lf
