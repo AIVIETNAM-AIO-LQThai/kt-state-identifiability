@@ -217,3 +217,88 @@ will quantify before any batch. 7. Bootstrap null test is the only S2 inference;
 `pytest -q` all green; `audit-design` report with singular values/condition numbers at two points and the deficient case
 flagged; one clean smoke run from an empty results dir + byte-identical rerun + interrupted-resume check; smoke report
 with runtime and projected Stage 2/3 cost; decision log updated.
+
+---
+
+## Addendum — H1 OPUS REVIEW — smoke/audit checkpoint (2026-09-30)
+
+Reviewer: Opus 5.5, xhigh effort, Plan Mode (verified via `get_session`). Inputs: code at `147035b`,
+`results/experiment_01/audit/design_audit.json`, `results/experiment_01/smoke/494d1072b9/`, plus read-only re-fits.
+
+## Verdict: **BLOCKED — implementation defect (C1)**. It is unblocked by the coding corrections below, which preserve the approved design
+
+The mathematics is implemented as approved. The optimizer stopping rule, however, is mis-scaled, so B2 fits terminate early.
+The fix changes no model, DGP, scenario, hypothesis, threshold or sample size. Stage 2 stays blocked until the corrections
+pass the unblock criteria below, and its budget needs your decision (question asked separately).
+
+## Audit results — pass
+- **Kernels.** `kernels.py` matches D01/D02. Exposures are strictly earlier practice attempts of the same skill; probes never count (tested); the clock is absolute.
+- **Moments.** μ, D and C in `moments.py:80-87` match the frozen formulas, including the cross-skill gain products, the session-indicator OU term and the unit residual variance. They agree with Monte Carlo on 400k learners, and V = I + PSD by construction.
+- **Simulator.** `simulator.py:63-79` uses the exact OU transition `a=exp(-Δ/τ_F)` with innovation variance `σ_F²(1-a²)` and a stationary session start. S6, S7 and S8 match D08, and negative Gaussian gains are kept.
+- **Likelihood.** Cell probabilities match scipy to 1e-10. Count tables are sufficient. The adjoint gradient matches finite differences, learner scores sum to the gradient, and scores are mean-zero at the truth (|t| ≤ 1.4 over 18 parameters, 4000 learners).
+- **Constraints.** Variance coordinates admit an exact 0, and log-Cholesky keeps Σ_M positive definite. Nesting is exact: B2 with σ²_F=0 equals B1, and B1 with r̄=σ²_r=0 equals B0. Inactive τ parameters are handled.
+- **Inference.** The sandwich uses learner-level scores and excludes boundary parameters. The bootstrap resamples whole learners. The null test simulates from the fitted B1 under the clean DGP, repeats the full B1+B2 search in each replicate, and uses p=(1+#)/(B+1).
+- **Identifiability.** Full rank 18/18 at three interior points, with FD vs analytic singular values agreeing to 1e-6. The deficient control is detected (rank 16/18).
+- **Runner.** Resume, corrupt-job rerun, error recording, manifest refusal and the frozen-confirmatory gate are all tested, and reruns are deterministic.
+
+## Defects to correct (Sonnet, within the approved design; no user approval needed)
+**C1 (blocking): optimizer stopping rule.** `fit.py:30` divides the objective by N·pairs, so `gtol=1e-5` equals roughly 4
+(N=64) to 19 (N=300) log-lik units per coordinate. Read-only re-fits of the same starts:
+
+| dataset | current rule: spread of B2 start log-liks | tight rule (ftol 1e-15, gtol 1e-9): spread | interpretation |
+|---|---|---|---|
+| smoke S1 rep0 (N=64) | 25.0 (start at τ_F=0.5 stopped at τ_F=0.5) | 0.000 | premature stop |
+| smoke S1 rep1 (N=64) | 18.7 | 0.000 | premature stop |
+| S1 N=300 | **79.4** | 0.000 | premature stop |
+| S2 N=64 / N=300 | 1.9 / 1.4 | 2.05 / 1.38 (one start) | genuine secondary τ_F optimum under the null |
+
+Fix: define the stopping rule in absolute log-lik units, independent of N. Set `gtol_eff = gtol_abs / obj.scale` with
+`gtol_abs = 1e-3`, `ftol = 1e-15` and `max_iter = 3000`. Keep the per-pair objective scaling, which is numerically well-behaved
+(the per-learner scaling produced one erratic start at −912 units). Record the absolute projected-gradient norm, and flag
+`large_projected_gradient` when it exceeds 1e-2 absolute. D12 is superseded (new decision D19).
+**C2 (blocking for reports): reporting on the boundary or with inactive truth.** `summarize.py:76-101` reports bias and Wald
+coverage for parameters whose true value is on the boundary or does not exist. Examples in the smoke summary: "σ²_F coverage 0/1" in S2, and τ_F bias in S2. The same would happen for r̄, σ²_r and τ_R in S3, and for σ²_F and τ_F in S8n. Fix: report those as NA, and give coverage only for
+interior-truth parameters. Report both conditional coverage (interior fits) and unconditional coverage (boundary fits count as not covering), with counts.
+**C3: start-agreement metric.** Use an absolute tolerance of 0.01 log-lik units. Report `n_starts_at_best` and `secondary_optima`
+(starts converged at least 0.5 units below the best), as information rather than error. Escalate to Opus if, in more than 20% of
+a cell's B2 fits, the best was reached by only one start.
+**C4: tests.** On a fixed N=300 S1 dataset, all five B2 starts must reach within 0.01 of the best. Add a test that the stopping
+rule is N-invariant in absolute units, and a test that the summary never reports coverage or bias for boundary or inactive truths.
+**C5: re-smoke.** Rerun smoke into a fresh results directory (the code hash changes). Re-verify determinism, and update the
+smoke report with a before/after table. Minor: remove the unused `ndtri` import and the unused `allow_mismatch` parameter in `check_manifest`.
+
+**Unblock criteria for Stage 2** (Sonnet checks them mechanically; if any fails, escalate to Opus):
+1. The full test suite passes.
+2. In the re-smoke, 0 job errors; every fit converged; the absolute projected gradient is ≤ 1e-2 in all fits; and in every S1 B2 fit at least 3 of 5 starts are within 0.01 of the best.
+3. Deterministic rerun is identical.
+4. The summary contains no boundary or inactive-truth coverage or bias.
+5. The Stage 2 dry-run cost is within the approved budget (question below).
+
+## Stated limitations (not blocking; carry into Stage 2/3 reports)
+- **L1.** σ²_α (true 0.0025) and σ²_r (true 0.0225) are not identifiable at N ≤ 300: predicted SEs are 0.002 and 0.033, and in the smoke run 6 of 8 B1/B2 fits put σ²_r on its lower bound. The sandwich conditions on boundary nuisance parameters, so it can understate the SEs of ᾱ, φ, r̄ and τ_R. The smoke bootstrap/sandwich SD ratios of 0.5–0.9 for these fit that explanation. Stage 2's learner bootstrap (B=50, N=300) is the check.
+- **L2.** τ_F is the weakest direction and is secondary. Interpret it only when σ²_F is clearly positive, and always with its uncertainty (predicted SE: 3 min at τ_F=10, 28 min at τ_F=20).
+- **L3.** Provisional MDE σ²_F = 0.04: the design-based z is about 1.2 at N=300 and 2.1 at N=1000. With S1m declined, Experiment 1 cannot demonstrate this MDE empirically. It must be reframed or dropped in the Stage 3 request, not after the results.
+- **L4.** Under the null, the composite LR is not χ²: one S2 N=300 dataset gives CLR = 11.4 with σ̂²_F = 0.019 and τ̂_F = 0.7 min. Only the bootstrap-calibrated p-value is meaningful.
+- **L5.** Full rank shows local identification at the tested points only.
+
+## Re-costing with the corrected stopping rule (measured, single core, N-independent)
+A B0/B1/B2 5-start fit takes about 22 / 45 / 66 s. A fit job with sandwich and held-out scoring takes about 150 s, and a null replicate (B1+B2) about 110 s.
+- **Stage 2 as approved (B=99 on S1, S2, S8n):** 891 × 110 s + 30 × 150 s + learner bootstrap ≈ **29 CPU-h, about 7.3 h wall on 4 workers**. This exceeds the approved 20 CPU-h / 6 h caps.
+- **With B=49:** about 15 CPU-h, about 3.8 h wall.
+- **Stage 3 provisional:** null bootstraps 60 × 199 × 110 s ≈ **365 CPU-h** (about 3.8 days on 4 workers), plus about 2.5 CPU-h of fits. Decided at the Stage 3 request.
+
+## User decisions at this review (2026-09-30)
+- **D20: Stage 2 null bootstrap B = 49**, down from 99. It applies to S1, S2 and S8n × 3 reps. Scenarios, N (300 + 300 held-out), reps, models and 5 starts are unchanged. The learner bootstrap stays at B = 50 on S1 rep 0. Caps stay at ≤ 20 CPU-h and ≤ 6 h wall with 4 workers, and the projection is about 15 CPU-h / 3.8 h. B for Stage 3 is still open (provisionally 199).
+- **D21: MDE unchanged now.** The Stage 3 request will propose dropping the MDE σ²_F = 0.04 as a confirmatory criterion or reframing it as design-based detectability, before any confirmatory data exist. S1m is not added.
+
+## Stage 2 config to create (`configs/experiment_01/stage_diagnostic.yaml`)
+Settings: `stage: diagnostic`, new master seed, scenarios [S1, S2, S3, S4a, S4b, S5, S6, S7, S8, S8n], `N_list: [300]`,
+`replications: 3`, models B0/B1/B2, `n_starts: 5`, `heldout_N: 300`, `sandwich: true`, `null_bootstrap: {B: 49}` on S1/S2/S8n
+reps 0–2, `learner_bootstrap: {B: 50, model: B2}` on S1 rep 0, cost model from the measured per-start seconds,
+`budget: {max_cpu_hours: 20, max_wall_minutes: 360, workers: 4}`. The runner's wall cap stops submission and allows resume.
+Sonnet stops and reports if a dry-run projection exceeds 20 CPU-h.
+
+## Next steps after approval
+0. Opus (now in execution mode) persists this review: an H1 entry in `docs/experiment_01_handoff.md` (verdict, C1–C5, unblock criteria), D19–D21 in the decision log, and the review into `docs/experiment_01_plan.md`. Then Opus commits, pushes and emits the H2 handoff.
+1. Hand off to Sonnet (Medium; High for C1/C4) and implement C1–C5.
+2. Sonnet checks the unblock criteria. If all pass, Stage 2 runs as approved or as budget-amended, followed by the H3 handoff to Opus. If any fails, Sonnet escalates to Opus.
