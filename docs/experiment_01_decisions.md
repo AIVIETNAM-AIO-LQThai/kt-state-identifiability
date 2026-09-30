@@ -16,3 +16,26 @@ status. Proposals that are not yet approved are marked **PROPOSED**; they are no
 | D09 | 2026-09-30 | Add S8n (S8 gains with σ_F² = 0) to Stage 2 with null bootstrap. S1m (MDE power run) not added. M9 filtering not in scope | Direct false-attribution test for misspecified heterogeneity. The MDE is assessed only through design-based predicted SEs | Stage 2 config | — | Approved |
 | D10 | 2026-09-30 | Execute in the cloud container (`.venv`, Python 3.12, numpy 2.4.6, scipy 1.17.1: the newest on this mirror; the user's local pins 2.5.3/1.18.1 are not available). Commit and push at milestones/handoffs to `exp/transient-state-recoverability`; no PR | The container is ephemeral. The user asked for a purpose-named branch instead of `claude/sharp-carson-en32pf` | repo, `.gitignore` | Branch created from `6886865` | Approved |
 | D11 | 2026-09-30 | Budgets: Stage 1 ≤ 1 CPU-h / 30 min wall; Stage 2 ≤ 20 CPU-h / 6 h wall, 4 workers (runs only after the Opus audit passes); Stage 3 not approved | Bounded local CPU execution | stage configs | — | Approved (Stage 3 excluded) |
+
+## Implementation-level decisions (Sonnet phase, 2026-09-30)
+
+These preserve the approved design (no change to the model, DGP, scenarios, hypotheses, thresholds or sample sizes). They are
+recorded for review at the Opus smoke/audit checkpoint. "Approval" = within the approved plan; the user may overrule at review.
+
+| ID | Decision | Rationale and evidence | Affects | Approval |
+|---|---|---|---|---|
+| D12 | Solver tolerances `ftol = 1e-11`, `gtol = 1e-5` (normalised per-pair objective), maxcor 20, max 400 iterations | Tolerance study (N=64/300 B2): `ftol=1e-10` stalls on the flat tau_F direction (9–14 log-lik units short); `1e-11/1e-5` loses 0.002 log-lik and saves ~17% time. Not looser | `design.yaml: fit`, `fit.py` | Within plan |
+| D13 | B1 start policy does not depend on B0: default start values with a `tau_R` grid {1,3,6,12,25}; B2 warm-starts from the same-dataset B1 solution with the `tau_F` grid {0.5,2,8,30,120}; B2 additionally keeps the embedded B1 solution (`sigma2_F=0`) as a candidate so CLR >= 0 | Makes the observed-data and bootstrap-replicate pipelines identical (a start rule that used the null-truth would be anti-conservative). The plan text said "B1 warm-starts from B0" | `fit.py` | Deviation from plan wording; scientific content unchanged |
+| D14 | BVN: tetrachoric (Mehler–Hermite) series, 24 terms, for `|rho| <= 0.35`; tiered Gauss–Legendre on `rho = sin(theta)` (8/12/24/48 nodes) otherwise; `|rho|` clipped at 0.9995 | Validated against `scipy.stats.multivariate_normal.cdf` < 1e-11 over a wide argument range; objective+gradient 130 ms -> ~50 ms | `bvn.py` | Within plan |
+| D15 | Objective gradient by reverse-mode adjoint through (mu, V); per-learner scores and the identifiability Jacobian by explicit Jacobians of the standardised map | Two independent derivative paths cross-validated in tests (scores sum to the adjoint gradient; both match finite differences) | `composite_likelihood.py`, `identifiability.py` | Within plan |
+| D16 | "Deficient" control design: F never resets or decays (all pairs share the OU kernel with zero time separation), so F is a learner intercept | First attempt (tau_F = 1e6) was silently clipped to the 1000-min bound and did not produce deficiency; corrected. Now rank 16/18, two singular values ~1e-15 (tau_F, and sigma2_F vs a common Sigma_M shift) | `identifiability.py`, tests | Within plan |
+| D17 | Runner granularity: one `fit` job per (scenario, N, rep) plus independent `null_rep` and `lboot_rep` jobs; datasets re-simulated from seeds instead of stored; atomic writes; corrupt jobs rerun; recorded exceptions kept unless `--retry-errors`; resume refuses on code-hash/version change; confirmatory needs `frozen: true` + matching `--frozen-sha256` | Parallelism, resumability, no silent mixing | `runner.py`, `cli.py` | Within plan |
+| D18 | Held-out scores are named *population-marginal* Bernoulli and pairwise-composite log scores on separate held-out learners; they are not next-response predictions | Prompt requirement; filtering (M9) declined | `evaluate.py` | Within plan |
+
+## Findings that need review (not decisions)
+
+| ID | Finding | Evidence | Needed |
+|---|---|---|---|
+| F1 | Design-based predicted Godambe SE of `sigma2_F` is 0.038 (N=300) / 0.021 (N=1000) at the generating point, 0.034 / 0.019 at `sigma2_F = 0.04`; the provisional MDE 0.04 is therefore about 1.2 SE at N=300 and 2.1 SE at N=1000. `sigma2_F` estimates are strongly correlated with `tau_F` (-0.77 to -0.92) and with Sigma_M diagonals / `sigma2_r` | `results/experiment_01/audit/design_audit.json` | Opus interpretation; possible user decision on threshold/N/design |
+| F2 | The weakest local direction is `log tau_F` alone (smallest singular value 0.49 vs >= 3.5 for all others); predicted SE(tau_F) is 3.1 min (N=300, generating) but 28 min at `tau_F = 20` | same | Opus: is `tau_F` interpretable at N=300? |
+| F3 | Measured cost per optimiser start (N-independent): B0 ~4 s, B1 ~7 s, B2 ~13–19 s. Smoke estimate ~1.2 CPU-h vs the 1 CPU-h cap in the plan (wall time within cap) | tolerance study | User awareness; Stage 2/3 budgets need re-costing |
