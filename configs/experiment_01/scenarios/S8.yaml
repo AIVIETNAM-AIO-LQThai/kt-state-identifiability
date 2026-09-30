@@ -1,0 +1,4 @@
+id: S8
+description: lognormal heterogeneous gains, CV 0.6, correlated with baseline mastery; F present
+violations: [gain_distribution, gain_baseline_correlation]
+dgp: {gain_dist: lognormal, gain_cv: 0.6, gain_corr_m0: 0.5}

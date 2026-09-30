@@ -1,0 +1,4 @@
+id: S6
+description: session-start states exchangeable across a learner's sessions, rho_S = 0.5
+violations: [session_reset]
+dgp: {session_start_corr: 0.5}

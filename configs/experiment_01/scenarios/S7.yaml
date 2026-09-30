@@ -1,0 +1,4 @@
+id: S7
+description: endogenous context, F jumps by -0.25 after a practice error
+violations: [schedule_context_exogeneity]
+dgp: {error_jump: -0.25}

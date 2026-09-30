@@ -1,0 +1,51 @@
+# Experiment 1 -- frozen design and generating parameters (all units: minutes unless stated).
+version: 1
+design:
+  n_skills: 4
+  items_per_skill: 12
+  n_practice_sessions: 3
+  attempts_per_session: 32          # 8 per skill
+  n_probes: 16                      # 4 per skill, delayed probe session (not exposures)
+  session_start_min: [0.0, 1440.0, 4320.0]   # day 0, 1, 3
+  probe_start_min: 10080.0                   # day 7
+  interval: {min: 0.4, gamma_shape: 2.0, gamma_scale: 0.3}   # gap = min + Gamma(shape, scale)
+  difficulty: {lo: -1.0, hi: 1.0, skill_offsets: [-0.2, 0.0, 0.2, 0.4]}
+  n_templates: 8
+  practice_order: interleaved       # interleaved | blocked
+  max_run: 2                        # max same-skill run when interleaved
+  template_seed: 20260930
+generating:
+  alpha_bar: 0.15
+  phi: 0.20                         # slow kernel: H^s = (1-(1-phi)^n)/phi
+  sigma_alpha: 0.05
+  r_bar: 0.35
+  tau_R: 5.0                        # fast kernel: H^f = sum exp(-age/tau_R), minutes
+  sigma_r: 0.15
+  sigma_F: 0.40
+  tau_F: 10.0                       # OU time constant, minutes
+  sigma_M: {ind: 0.8, common: 0.1}  # Sigma_M = ind*I + common*11^T
+dgp:                                # data-generating-process options; scenarios override
+  session_start_corr: 0.0           # S6: rho_S
+  error_jump: 0.0                   # S7: F jump after a practice error (probit units)
+  gain_dist: normal                 # normal | lognormal
+  gain_cv: 0.6                      # lognormal coefficient of variation
+  gain_corr_m0: 0.5                 # latent correlation of gains with standardised mean M0
+fit:
+  n_starts: 5
+  tau_F_grid: [0.5, 2.0, 8.0, 30.0, 120.0]
+  tau_R_grid: [1.0, 3.0, 6.0, 12.0, 25.0]
+  jitter_sd: 0.15
+  max_iter: 400
+  gtol: 1.0e-6
+  boundary_tol: 1.0e-6
+  grad_flag_tol: 1.0e-4
+  start:                            # truth-independent default start
+    alpha_bar: 0.10
+    phi: 0.30
+    sigma2_alpha: 0.01
+    r_bar: 0.20
+    tau_R: 4.0
+    sigma2_r: 0.02
+    sigma2_F: 0.05
+    tau_F: 8.0
+    sigma_M: {ind: 0.5, common: 0.2}

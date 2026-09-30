@@ -1,0 +1,4 @@
+id: S4a
+description: near-white transient, tau_F = 0.2 min
+violations: []
+generating: {tau_F: 0.2}

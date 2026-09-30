@@ -1,0 +1,11 @@
+[project]
+name = "kt_trial"
+version = "0.1.0"
+description = "Experiment 1: identifiability and recovery of a shared transient latent state (synthetic)"
+requires-python = ">=3.11"
+dependencies = ["numpy", "scipy", "pandas", "PyYAML"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["slow: slower Monte Carlo / optimisation tests"]

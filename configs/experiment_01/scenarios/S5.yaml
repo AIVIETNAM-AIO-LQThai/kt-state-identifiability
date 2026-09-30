@@ -1,0 +1,4 @@
+id: S5
+description: blocked skill schedule (practice in 4 same-skill blocks of 8; probes unchanged)
+violations: [weak_interleaving]
+design: {practice_order: blocked}

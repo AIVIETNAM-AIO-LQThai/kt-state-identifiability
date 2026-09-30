@@ -1,0 +1,4 @@
+id: S2
+description: null transient, sigma_F^2 = 0
+violations: []
+generating: {sigma_F: 0.0}

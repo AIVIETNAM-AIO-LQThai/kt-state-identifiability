@@ -1,0 +1,4 @@
+id: S3
+description: no fast recency (r_bar = 0 and sigma_r = 0); F present
+violations: [no_fast_recency]
+generating: {r_bar: 0.0, sigma_r: 0.0}

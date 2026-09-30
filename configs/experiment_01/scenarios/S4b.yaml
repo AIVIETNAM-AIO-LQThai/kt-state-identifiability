@@ -1,0 +1,4 @@
+id: S4b
+description: near-session-intercept transient, tau_F = 60 min
+violations: []
+generating: {tau_F: 60.0}
