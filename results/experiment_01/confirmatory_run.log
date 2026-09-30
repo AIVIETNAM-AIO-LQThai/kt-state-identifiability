@@ -453,3 +453,15 @@ estimated cost: 108.48 CPU-h, ~1627 min wall on 4 workers
   null_rep__S2__N300__r2__b89 ok 65s  [448 run, 0 error, 154.6 min]
   null_rep__S2__N300__r2__b90 ok 78s  [449 run, 0 error, 155.2 min]
   null_rep__S2__N300__r2__b91 ok 78s  [450 run, 0 error, 155.3 min]
+=== RESTART after container restart at 23:27 UTC; resuming identical frozen command ===
+stage=confirmatory config_hash=1b1307a48a5a results_dir=results/experiment_01/confirmatory/1b1307a48a
+job matrix: {'fit': 160, 'null_rep': 4720, 'lboot_rep': 50}  optimizer starts: {'fit': 2400, 'null_rep': 47200, 'lboot_rep': 100} (total 49700)
+estimated cost: 108.48 CPU-h, ~1627 min wall on 4 workers
+[phase1] 0 jobs to run (160 already valid/recorded)
+[phase2] 4480 jobs to run (290 already valid/recorded)
+  null_rep__S2__N300__r2__b94 ok 38s  [1 run, 0 error, 0.7 min]
+  null_rep__S2__N300__r2__b95 ok 39s  [2 run, 0 error, 0.7 min]
+  null_rep__S2__N300__r2__b92 ok 46s  [3 run, 0 error, 0.8 min]
+  null_rep__S2__N300__r2__b93 ok 47s  [4 run, 0 error, 0.8 min]
+  null_rep__S2__N300__r2__b98 ok 35s  [5 run, 0 error, 1.4 min]
+  null_rep__S2__N300__r2__b96 ok 46s  [6 run, 0 error, 1.4 min]
