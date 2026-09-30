@@ -340,3 +340,84 @@ Cholesky coordinates). Double-precision resolution of the objective, about 5e-10
 This changes a numerical diagnostic, not the model, estimator, inference or thresholds. Opus decides it within the
 routing policy, and it is shown here for your approval. Next: Opus persists D22 and the H2c handoff, then hands off to
 Sonnet, which implements D22, runs the full suite, the re-smoke (C5) and the criteria check, then Stage 2.
+
+---
+
+## Addendum — H3 OPUS REVIEW OF STAGE 2 + STAGE 3 APPROVAL REQUEST (2026-09-30)
+
+Reviewer: Opus 5.5 in Plan Mode, High effort (verified via `get_session`; Plan Mode entered with EnterPlanMode).
+Inputs: `results/experiment_01/diagnostic/eeb188ecc6/` (every job envelope and the summary), `docs/experiment_01_diagnostic_report.md`, and code at `38c0531`.
+
+## A. What Stage 2 does and does not support (3 replications per scenario at N=300; descriptive only)
+**The estimator works as intended.**
+- Fits: 521/521 jobs ok, 100 % convergence, and all 5 starts reach the same optimum in every cell. The Newton decrement is at most 2e-4, and no Hessian is non-positive-definite.
+- Clean-scenario recovery: in S1, σ̂²_F is 0.140, 0.138 and 0.206 (truth 0.16; bias +0.002 ± 0.022). The mean and kernel parameters recover within about 1 MCSE.
+- Nested models: B0 is biased (ᾱ +0.18), which is the expected cost of omitting fast recency. B1 − B0 held-out scores are +33 to +127 per learner.
+- Null test: it separates S1 (CLR 622–1114, far above the bootstrap-null 99 % quantiles of 127–189) from S2 (CLR 0 in 3/3).
+
+**Limitations found in Stage 2** (these carry into Stage 3 and the final report):
+- **L6, the near-white pathway.** In S8n rep 2 there is no F, yet σ̂²_F = 0.046 with τ̂_F = 0.05 min, at the lower bound and below the shortest design lag of 0.4 min. A near-white F is identified only through the marginal probit scale, which the known difficulties anchor. It can therefore absorb misspecification of the latent marginal distribution, such as non-Gaussian gains. S4a shows the same pathway recovering a genuine near-white F (τ̂_F 0.06–0.32 against a true 0.2). **The estimator cannot tell a genuine white-noise transient from marginal misfit.**
+- **L7, outcome-driven context (S7).** σ̂²_F is about 0.30 (truth 0.16) with τ̂_F 64–109 min, a negative r̄, and τ_R at its 120-min bound. Error-triggered shifts look to B2 like a large, persistent F. **A positive σ̂²_F does not show that the state is exogenous to practice.**
+- **L8, trade-off with recency when recency is absent (S3).** σ̂²_F is 0.134, 0.118 and 0.128 (bias −0.034, about 7 MCSE). The unused recency terms absorb part of F's short-lag covariance: r̄ goes negative, and in one fit σ²_r hits its upper bound of 2.
+- **Gain misspecification (S8).** σ²_F is attenuated (−0.039) while σ²_r is inflated. Correlated session starts (S6) and a near-session-intercept F (S4b) increase the spread of σ̂²_F, and τ_F is poorly determined when τ_F = 60.
+- **τ_F inference.** The sandwich SE for τ_F is about half the learner-bootstrap SD (ratio 0.46), and for σ²_F it is about 10 % too small (0.90). There will be no τ_F interval claims.
+- **Reporting defect (C6).** Wald intervals for σ²_F near 0 are meaningless: S8n rep 0 gives an upper limit of 5e70. Coverage for S1 was unaffected.
+
+**Verdict: ready for Stage 3 with stated limitations.** No estimator defect remains. C6–C8 below are reporting and runner changes only.
+
+## B. Corrections before freezing (Sonnet; within the approved design)
+- **C6.** Report a Wald CI for a variance only when estimate > 2·SE. Otherwise record `NA (near boundary)`, and count such fits as non-covering in unconditional coverage.
+- **C7.** Allow a per-dataset `B` in `null_bootstrap.datasets` (B = 99 for S2/S8n, B = 19 for S1/S8) and an `N` per learner-bootstrap dataset.
+- **C8.** Make `summarize` compute the pre-registered decision rules PH1–PH6 below automatically, plus a near-white indicator: the share of B2 fits with σ̂²_F > 0 and τ̂_F < 0.4 min.
+- **Tests and freeze.** Add tests for C6–C8 and run the full suite. Then write `configs/experiment_01/stage_confirmatory.yaml` with `frozen: true`, record its sha256 and the git commit, and dry-run it. Do not run it.
+
+## C. Stage 3 protocol requested for approval (frozen; the confirmatory run is local, on your Windows machine)
+
+**Hypotheses and decision rules.** All are fixed now, before any Stage 3 data exist. The 95 % Monte Carlo CI is bias ± 1.96·MCSE, and rates carry Clopper–Pearson (CP) 95 % limits.
+
+| ID | Claim tested (B2 vs B1, under the simulated assumptions only) | Cells | Rule |
+|---|---|---|---|
+| PH1 | σ²_F is recovered without material bias in the clean process | S1, each N | pass: MC CI of bias ⊂ [−0.04, 0.04]; fail: MC CI disjoint from it; otherwise inconclusive |
+| PH2 | The boundary-aware test detects σ²_F = 0.16 | S1, 10 datasets per N | reported rejection rate with CP limits (power) |
+| PH3 | The test does not produce excess false positives when F is absent | S2, 20 datasets (10 per N) | "evidence of excess false positives" if the pooled CP lower bound > 0.05 (≥ 4/20); otherwise "no evidence", reporting the upper bound (e.g. 0/20 → 0.14). The distribution of σ̂²_F is reported (share = 0, mean, 90th percentile) |
+| PH4 | Misspecified, correlated gains are not falsely attributed to F | S8n, same as PH3 | PH3 rule, plus the near-white share |
+| PH5 | Robustness of σ²_F recovery to non-Gaussian, correlated gains | S8, each N | PH1 rule, labelled secondary robustness |
+| PH6 | B2 improves the held-out population-marginal pairwise composite score | S1 (improvement); S2/S8n (spurious superiority) | S1: improvement if the MC CI of the mean per-learner difference > 0. S2/S8n: spurious if the MC CI > 0 |
+
+**Secondary, descriptive only:**
+- τ_F bias, RMSE and SD in S1 where σ̂²_F > 0. No τ_F coverage claim.
+- Sandwich coverage of σ²_F in S1, conditional and unconditional.
+- One learner bootstrap (B = 50) on S1, N = 1000, rep 0, as a sandwich check.
+- **MDE (resolves D21):** dropped as a confirmatory criterion. It is reported as design-based detectability only: predicted SE at σ²_F = 0.04 is 0.034 (N=300) and 0.019 (N=1000), shown with the empirical SD of σ̂²_F in S1. No empirical claim is made at 0.04.
+
+**Matrix.**
+- **Scenarios:** S1, S2, S8, S8n.
+- **Sample sizes:** N_fit ∈ {300, 1000} fitting learners, plus 300 held-out learners per dataset. Totals are reported separately.
+- **Replications:** R = 20 per cell, giving 160 fit jobs (B0/B1/B2 × 5 starts = 2,400 starts, sandwich for B1/B2).
+- **Null tests:** on reps 0–9 of each cell. B = 99 for S2/S8n (40 datasets → 3,960 replicates) and B = 19 for S1/S8 (40 → 760 replicates), about 47,200 starts. With B = 19 the minimum p is 0.05; α = 0.05.
+- **Seed and estimator:** master seed 20261201. Estimator = code at the post-C6–C8 commit, with D13/D19/D22 and the Stage 2 settings. The config sha256 is recorded before handoff.
+
+**Cost (measured: fit job 110 s, null replicate 78 s, per core; N=1000 not yet timed, ±30 %):**
+- Fits: about 5.3 CPU-h. Null replicates: about 102 CPU-h. Learner bootstrap: about 0.3 CPU-h. **Total about 108 CPU-h.**
+- Wall time on your machine is about 108 / workers hours: roughly 27 h on 4 workers, 14 h on 8. The run resumes after interruption, and nothing auto-advances.
+
+**Deviations from your prompt.**
+- The null tests use B = 99 and B = 19 rather than the provisional B = 199. The tests run on 10 of the 20 datasets per cell, not all.
+- S8n is added (your choice). There are 20 replications instead of the minimum 10.
+- The MDE is dropped as a criterion (D21).
+- Earlier method decisions still apply: the D19 stopping rule, the D22 certificate, the D13 start policy, and a stopping-rule tolerance of 1e-3.
+
+**Local execution procedure** (Sonnet provides the exact commands):
+1. `git pull` the frozen commit.
+2. In `.venv12`, run `python -m pytest -q`. It must pass; if anything fails, stop and report.
+3. Run `python -m kt_trial run --config configs/experiment_01/stage_confirmatory.yaml --frozen-sha256 <sha> --workers <cores>`.
+4. Run `summarize` on the results directory.
+5. Commit and push `results/experiment_01/confirmatory/` (about 25 MB) to the branch, or tell me its location.
+
+Your local numpy 2.5.3 / scipy 1.18.1 differ from the container's 2.4.6 / 1.17.1. The versions are recorded in the manifest, and they do not change the protocol.
+
+**Handoffs after approval.**
+- H4: Opus (execution) persists this request as D23–D25 and hands off to Sonnet. Sonnet does C6–C8, the tests, the freeze and the dry-run, then gives you the commands. Opus does not run the confirmatory matrix.
+- H5: after your local run, you switch to Opus in Plan Mode for the final interpretation.
+
+**Status: Stage 3 protocol APPROVED by the user on 2026-09-30 (plan approval). Frozen config not yet written.**

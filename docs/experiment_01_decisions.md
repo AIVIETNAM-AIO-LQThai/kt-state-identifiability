@@ -60,3 +60,13 @@ Findings F1–F3 were reviewed at H1. F1 becomes limitation L3 (D21). F2 becomes
 
 ## Stage 2 outcome (2026-09-30)
 No new decisions. Stage 2 ran as approved (D20 B = 49). Findings F4–F6 for Opus review at H3: F4 S7 inflates sigma2_F (+0.145); F5 S8 underestimates sigma2_F (−0.039) and one S8n dataset gave sigma2_F-hat 0.046 (not rejected, p = 0.16); F6 sandwich SE for tau_F is about half the learner-bootstrap SD and about 10 % too small for sigma2_F. See `docs/experiment_01_diagnostic_report.md`.
+
+## Stage 3 approval (Opus H3 review, 2026-09-30)
+
+| ID | Decision | Rationale and evidence | Affects | Approval |
+|---|---|---|---|---|
+| D23 | **Stage 3 confirmatory protocol.** Scenarios S1, S2, S8, S8n; N_fit ∈ {300, 1000} plus 300 held-out learners per dataset; R = 20 per cell (160 fit jobs; B0/B1/B2 × 5 starts; sandwich for B1/B2); null tests on reps 0–9 of each cell, B = 99 for S2/S8n and B = 19 for S1/S8 (4,720 replicates); one learner bootstrap (B = 50) on S1 N = 1000 rep 0; master seed 20261201; about 108 CPU-h | Stage 2 showed a healthy estimator. Fits are cheap, so R = 20; null replicates (78 s each) dominate cost. S8n added by the user. Lean null budget chosen by the user | `configs/experiment_01/stage_confirmatory.yaml` (to be frozen) | **Approved by user** |
+| D24 | **Pre-registered decision rules PH1–PH6** (plan addendum H3 §C). PH1/PH5: bias MC CI (±1.96·MCSE) ⊂ [−0.04, 0.04] = pass; disjoint = fail; otherwise inconclusive. PH3/PH4: "excess false positives" if the pooled CP lower bound > 0.05; otherwise "no evidence" with the upper bound. PH2 power; PH6 held-out pairwise composite B2−B1. **MDE σ²_F = 0.04 dropped as a confirmatory criterion** (resolves D21) and reported as design-based detectability only. No τ_F interval claims | Fixed before any Stage 3 data; sandwich for τ_F unreliable (ratio 0.46 vs learner bootstrap) | `summarize.py` (C8), reports | **Approved by user** |
+| D25 | Stage 3 runs **on the user's local Windows machine** (`.venv12`). The full `pytest` must pass locally first; the run uses `--frozen-sha256`. Results are pushed to the branch for the Opus final interpretation. Pre-freeze corrections C6 (no variance Wald CI when estimate ≤ 2·SE), C7 (per-dataset B / N in bootstrap specs), C8 (automatic PH1–PH6 and near-white indicator in the summary) | Ephemeral container unsuitable for a ~27 h+ run; C6–C8 are reporting/runner changes only | `inference.py`, `runner.py`, `summarize.py`, tests | **Approved by user** |
+
+Stage 2 limitations carried forward: L6 (near-white F can absorb marginal-scale misfit; seen in S8n), L7 (outcome-driven context inflates σ²_F; S7), L8 (recency terms absorb part of F when recency is absent; S3, −0.034).

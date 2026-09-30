@@ -4,6 +4,32 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H4: Stage 3 approved → pre-freeze corrections, freeze, local-run instructions (2026-09-30)
+
+```text
+MODEL HANDOFF — Stage 3 protocol approved (D23–D25)
+Completed: Opus H3 review of Stage 2 (verdict: ready for Stage 3 with stated limitations L6–L8); Stage 3 protocol with
+  pre-registered rules PH1–PH6 approved by the user (plan addendum "H3 OPUS REVIEW"; decisions D23–D25).
+Next task:
+  (1) C6: in inference.sandwich, no Wald CI for a variance unless estimate > 2*SE (record "NA (near boundary)"; count as
+      non-covering in unconditional coverage).
+  (2) C7: runner accepts per-dataset B in null_bootstrap.datasets and N in learner_bootstrap.datasets (and in null datasets).
+  (3) C8: summarize computes PH1–PH6 exactly as in D24 (1.96*MCSE; CP bounds; pooled over N for PH3/PH4), the near-white
+      share (B2 fits with sigma2_F > 0 and tau_F < 0.4 min), and the MDE design-based detectability line (no pass/fail).
+  (4) Tests for C6–C8; full suite.
+  (5) Write configs/experiment_01/stage_confirmatory.yaml per D23 with frozen: true; commit; record the git commit, code hash
+      and config sha256 in the decision log and here; run `--dry-run` with the frozen sha (do NOT run the matrix).
+  (6) Give the user exact PowerShell commands: git pull; activate .venv12; python -m pytest -q; check-env; dry-run;
+      run --frozen-sha256 <sha> --workers <cores>; summarize; git add/commit/push results/experiment_01/confirmatory.
+Target: Sonnet 5.5, Medium (High for C8 decision-rule code and tests), execution mode
+Reason: Implementation of approved reporting/runner changes and the freeze; no scientific decisions remain open.
+Switch: Manual (no session control for changing the model is exposed).
+Approval: Stage 3 protocol approved (D23–D25). The confirmatory matrix is to be run by the USER locally, not in this container.
+Resume action: C6–C8, tests, freeze, dry-run, commands. Escalate to Opus if a correction would change any D23/D24 item.
+```
+
+---
+
 ## MODEL HANDOFF — H3: Stage 2 complete → Opus interpretation and Stage 3 request (2026-09-30)
 
 ```text
