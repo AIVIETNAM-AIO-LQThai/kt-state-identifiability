@@ -4,6 +4,32 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H3: Stage 2 complete → Opus interpretation and Stage 3 request (2026-09-30)
+
+```text
+MODEL HANDOFF — Stage 2 diagnostic complete
+Completed: D22 implemented; full suite 57 passed; re-smoke (results/experiment_01/smoke/0e7ec61e6f, all unblock criteria met);
+  Stage 2 (results/experiment_01/diagnostic/eeb188ecc6): 521/521 jobs ok, 0 failed fits, wall 162 min, 10.75 CPU-h;
+  report docs/experiment_01_diagnostic_report.md.
+Next task: Interpret the diagnostic (what it does and does not support), decide the Stage 3 protocol proposal (final hypotheses,
+  estimator version, scenarios, N, replications, thresholds incl. the MDE question D21, null-bootstrap B and which datasets get
+  it, compute/cost with the measured 78 s per null replicate, deviations from the prompt) and write the concrete Stage 3
+  approval request for the user. Draft the frozen configuration but do NOT freeze or run it.
+Target: Opus 5.5, High, Plan Mode
+Reason: Separate model limitations, estimator problems and sampling uncertainty; freeze the confirmatory protocol before any run.
+Switch: Manual (no session control for changing the model is exposed).
+Approval: Stage 3 NOT approved; waiting for a Stage 3 request the user must approve explicitly.
+Resume action: Read-only review and request drafting only. No confirmatory run.
+```
+
+Headlines for the reviewer (see the report for numbers and MCSEs; 3 reps per scenario): estimator healthy (100 % convergence, all 5 starts reach the best,
+Newton decrement <= 2e-4); S1 sigma2_F bias +0.002 +- 0.022 (inconclusive vs 0.04); S7 (endogenous context) inflates sigma2_F by +0.145; S8 underestimates by 0.039;
+null test: S1 3/3 reject (p = 0.02 = minimum for B = 49), S2 0/3, S8n 0/3 (one S8n dataset with sigma2_F-hat 0.046, CLR 56.7, p = 0.16);
+sandwich vs learner-bootstrap SD: 1.07-1.34 for mean/kernel parameters, 0.90 for sigma2_F, 0.46 for tau_F; bootstrap-null CLR heavy-tailed.
+Cost inputs: fit 110 s, null replicate 78 s; Stage 3 null bootstrap at B = 199 on 60 datasets ~ 257 CPU-h (~2.7 days on 4 workers).
+
+---
+
 ## MODEL HANDOFF — H2c: criterion-2 decision → implementation, re-smoke, Stage 2 (2026-09-30)
 
 ```text
