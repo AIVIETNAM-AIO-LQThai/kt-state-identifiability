@@ -69,3 +69,20 @@ Full rank supports **local** identification only; it is not global uniqueness or
 
 ## 8. Recommendation
 Pipeline is ready for the Opus smoke/audit review. Ready for Stage 2 **subject to** that review (`pass`, `pass with stated limitations`, or `blocked`) and to a dry-run cost check of the Stage 2 config.
+
+
+## 9. Re-smoke after the H1 corrections (C1–C5, D19, D22)
+Results: `results/experiment_01/smoke/0e7ec61e6f/` (code hash changed; the first smoke in `.../494d1072b9/` is kept for the record).
+52/52 jobs ok, 0 errors, wall 19.2 min, 1.26 CPU-h (estimate 1.40; the plan's 1.0 CPU-h smoke cap was exceeded, as flagged in F3).
+Full suite: 57 tests pass. Deterministic re-execution of `fit__S2__N64__r1` and `null_rep__S2__N64__r0__b3`: identical.
+
+| B2 fit | start log-lik spread before | after | sigma2_F / tau_F before | after | starts at best | Newton decrement |
+|---|---|---|---|---|---|---|
+| S1 N64 r0 | 24.98 | 0.000 | 0.1133 / 21.07 | 0.1133 / 21.10 | 5 | 3.2e-09 |
+| S1 N64 r1 | 18.70 | 0.000 | 0.1162 / 10.32 | 0.1164 / 10.27 | 5 | 1.6e-09 |
+| S2 N64 r0 | 0.01 | 0.000 | 0.0000 / 1.00 | 0.0000 / 30.04 | 5 | 2.0e-09 |
+| S2 N64 r1 | 1.94 | 2.050 | 0.0320 / 29.96 | 0.0336 / 17.60 | 4 | 1.1e-09 |
+
+Unblock criteria (H2c/D22): (1) suite passes; (2) 0 job errors, all fits converged, max Newton decrement 3.2e-9 (<= 1e-3), 0 non-PD Hessians,
+S1 B2 fits reach the best with 5/5 starts; (3) deterministic rerun identical; (4) S2 sigma2_F / tau_F reported as NA with no coverage entries;
+(5) Stage 2 dry-run 15.2 CPU-h, ~3.8 h wall. All five met. Null tests are unchanged in direction (S1 p = 0.05 = minimum attainable with B = 19; S2 p = 0.95).
