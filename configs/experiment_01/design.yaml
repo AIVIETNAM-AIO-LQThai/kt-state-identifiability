@@ -35,11 +35,13 @@ fit:
   tau_F_grid: [0.5, 2.0, 8.0, 30.0, 120.0]
   tau_R_grid: [1.0, 3.0, 6.0, 12.0, 25.0]
   jitter_sd: 0.15
-  max_iter: 400
-  ftol: 1.0e-11
-  gtol: 1.0e-5
+  max_iter: 3000
+  ftol: 1.0e-15
+  gtol_abs: 1.0e-3                  # stopping rule in ABSOLUTE log-likelihood units (D19); N-invariant
+  grad_flag_abs: 1.0e-2             # flag fits whose absolute projected gradient exceeds this
   boundary_tol: 1.0e-6
-  grad_flag_tol: 1.0e-4
+  agree_tol: 0.01                   # a start is "at the best" if within this many log-lik units
+  secondary_delta: 0.5              # a converged start this far below the best is a secondary optimum
   start:                            # truth-independent default start
     alpha_bar: 0.10
     phi: 0.30

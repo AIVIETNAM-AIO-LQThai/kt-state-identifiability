@@ -17,6 +17,26 @@ ACTIVE = {"B0": ["alpha_bar", "phi", "sigma2_alpha"],
 BIAS_TOL_SIGMA2F = 0.04
 
 
+VARIANCE_PARAMS = ("sigma2_alpha", "sigma2_r", "sigma2_F")
+
+
+def truth_status(truth: dict) -> dict:
+    """Map each scalar parameter to None (interior truth: bias/coverage meaningful) or a reason string (NA).
+
+    A variance whose true value is 0 lies on the boundary (estimates are one-sided; Wald coverage is not
+    meaningful); a time constant whose variance / gain is absent does not exist in the generating process.
+    """
+    st = {n: None for n in ACTIVE["B2"]}
+    for v in VARIANCE_PARAMS:
+        if truth[v] == 0:
+            st[v] = "true value on the boundary (0)"
+    if truth["sigma2_F"] == 0:
+        st["tau_F"] = "inactive: no transient state in the generating process"
+    if truth["sigma2_r"] == 0 and truth["r_bar"] == 0:
+        st["tau_R"] = "inactive: no fast recency in the generating process"
+    return st
+
+
 def clopper_pearson(k: int, n: int, level=0.95):
     if n == 0:
         return [float("nan"), float("nan")]
@@ -68,38 +88,58 @@ def summarize(rd) -> dict:
                   "convergence_rate": float(np.mean([f["converged"] for f in good])) if good else None,
                   "flagged_rate": float(np.mean([f["status"] == "flagged" for f in good])) if good else None,
                   "boundary_hit_rate": {}, "params": {}, "runtime_sec_mean": float(np.mean([f["runtime"] for f in fits])),
-                  "start_agreement_mean": float(np.mean([f["start_agreement"]["n_within_1e-6_per_pair"] for f in good])) if good else None}
+                  "starts_at_best_mean": float(np.mean([f["start_agreement"]["n_starts_at_best"] for f in good])) if good else None,
+                  "single_start_at_best_rate": float(np.mean([f["start_agreement"]["n_starts_at_best"] < 2 for f in good])) if good else None,
+                  "secondary_optima_rate": float(np.mean([f["start_agreement"]["secondary_optima"] > 0 for f in good])) if good else None,
+                  "max_abs_projected_gradient": float(np.nanmax([f["grad_inf_abs"] for f in good])) if good and not np.all(np.isnan([f["grad_inf_abs"] for f in good])) else None}
             bh = defaultdict(int)
             for f in good:
                 for h in f["boundary_hits"]:
                     bh[h] += 1
             mc["boundary_hit_rate"] = {k: v / len(good) for k, v in bh.items()}
+            tstat = truth_status(truth)
             for n in ACTIVE[m]:
-                errs = [f["errors"][n] for f in good]
-                st = _stats(errs)
+                if tstat[n] is not None:                       # NA: report the estimate distribution only
+                    est = [f["theta"][n] for f in good]
+                    mc["params"][n] = {"truth": truth[n], "na_reason": tstat[n], "n": len(est),
+                                       "mean_estimate": float(np.mean(est)) if est else None,
+                                       "share_at_zero": float(np.mean([e <= 1e-6 for e in est])) if est and n in VARIANCE_PARAMS else None}
+                    continue
+                st = _stats([f["errors"][n] for f in good])
                 if st:
                     st["truth"] = truth[n]
                     mc["params"][n] = st
             if m == "B2":
                 pos = [f for f in good if f["theta"]["sigma2_F"] > 1e-6]
-                mc["tau_F_when_sigma2F_positive"] = _stats([f["errors"]["tau_F"] for f in pos]) if pos else None
+                mc["tau_F_when_sigma2F_positive"] = (_stats([f["errors"]["tau_F"] for f in pos])
+                                                     if pos and tstat["tau_F"] is None else None)
                 mc["share_sigma2F_at_zero"] = 1 - len(pos) / len(good) if good else None
                 if "sigma2_F" in mc["params"] and truth["sigma2_F"] > 0:
                     p = mc["params"]["sigma2_F"]
                     lo, hi = p["bias"] - 2 * p["mcse_bias"], p["bias"] + 2 * p["mcse_bias"]
                     p["bias_within_0.04"] = ("yes" if max(abs(lo), abs(hi)) <= BIAS_TOL_SIGMA2F else
                                              "no" if min(abs(lo), abs(hi)) > BIAS_TOL_SIGMA2F and lo * hi > 0 else "inconclusive")
-            # sandwich coverage (interior fits only)
+            # Wald coverage of the learner-score sandwich, only for parameters with an interior truth.
+            # conditional = fits where the parameter was interior and had a CI; unconditional = all converged fits
+            # (a fit at a bound, or without a CI, counts as not covering).
             cov = {}
             for r in rs:
-                sw = r["sandwich"].get(m)
-                if not sw or sw.get("status") != "ok":
+                f = r["fits"].get(m)
+                if not f or f["status"] == "failed":
                     continue
-                for n, d in sw["params"].items():
-                    c = cov.setdefault(n, [0, 0])
-                    c[1] += 1; c[0] += int(d["ci95"][0] <= truth[n] <= d["ci95"][1])
-            mc["sandwich_coverage_interior_fits"] = {n: {"covered": k, "n": t, "rate": k / t, "cp95": clopper_pearson(k, t)}
-                                                     for n, (k, t) in cov.items()}
+                sw = r["sandwich"].get(m)
+                for n in ACTIVE[m]:
+                    if tstat[n] is not None or n not in SCALAR_NAMES:
+                        continue
+                    c = cov.setdefault(n, {"cond_covered": 0, "cond_n": 0, "uncond_covered": 0, "uncond_n": 0})
+                    c["uncond_n"] += 1
+                    d = sw["params"].get(n) if sw and sw.get("status") == "ok" else None
+                    if d is not None:
+                        hit = int(d["ci95"][0] <= truth[n] <= d["ci95"][1])
+                        c["cond_n"] += 1; c["cond_covered"] += hit; c["uncond_covered"] += hit
+            mc["sandwich_coverage"] = {n: {**c, "conditional_cp95": clopper_pearson(c["cond_covered"], c["cond_n"]),
+                                           "unconditional_cp95": clopper_pearson(c["uncond_covered"], c["uncond_n"])}
+                                       for n, c in cov.items()}
             cell["models"][m] = mc
         pred = {}
         for score in ("marginal_bernoulli_log_score", "pairwise_composite_log_score"):
@@ -159,20 +199,28 @@ def to_markdown(s: dict) -> str:
         L += ["> Smoke stage: verifies the pipeline. It is **not** evidence for the research claim.", ""]
     for key, c in s["cells"].items():
         L += [f"## {key}  (fit N={c['N_fit']}, held-out N={c['N_heldout']}, generated {c['N_total_generated']}; {c['n_reps']} reps; violations: {c['violations'] or 'none'})", ""]
-        L += ["| model | fits | failed | converged | flagged | mean s/fit |", "|---|---|---|---|---|---|"]
+        L += ["| model | fits | failed | converged | flagged | starts at best (mean) | single-start-best rate | secondary-optima rate | max abs proj. grad | mean s/fit |",
+              "|---|---|---|---|---|---|---|---|---|---|"]
         for m, mc in c["models"].items():
-            L.append(f"| {m} | {mc['n_fits']} | {mc['n_failed']} | {_f(mc['convergence_rate'],2)} | {_f(mc['flagged_rate'],2)} | {mc['runtime_sec_mean']:.0f} |")
+            L.append(f"| {m} | {mc['n_fits']} | {mc['n_failed']} | {_f(mc['convergence_rate'],2)} | {_f(mc['flagged_rate'],2)} | "
+                     f"{_f(mc['starts_at_best_mean'],1)} | {_f(mc['single_start_at_best_rate'],2)} | {_f(mc['secondary_optima_rate'],2)} | "
+                     f"{_f(mc['max_abs_projected_gradient'],4)} | {mc['runtime_sec_mean']:.0f} |")
         L += ["", "| model | param | truth | bias | MCSE(bias) | RMSE | n |", "|---|---|---|---|---|---|---|"]
         for m, mc in c["models"].items():
             for n, p in mc["params"].items():
-                L.append(f"| {m} | {n} | {_f(p['truth'],4)} | {_f(p['bias'],4)} | {_f(p['mcse_bias'],4)} | {_f(p['rmse'],4)} | {p['n']} |")
+                if "na_reason" in p:
+                    z = "" if p["share_at_zero"] is None else "; share at 0: %.2f" % p["share_at_zero"]
+                    L.append(f"| {m} | {n} | {_f(p['truth'],4)} | NA ({p['na_reason']}) | mean estimate {_f(p['mean_estimate'],4)}{z} | NA | {p['n']} |")
+                else:
+                    L.append(f"| {m} | {n} | {_f(p['truth'],4)} | {_f(p['bias'],4)} | {_f(p['mcse_bias'],4)} | {_f(p['rmse'],4)} | {p['n']} |")
         b2 = c["models"].get("B2")
         if b2:
             L += ["", f"B2: share of fits with sigma2_F at 0: {_f(b2.get('share_sigma2F_at_zero'),2)}; boundary hits: {b2['boundary_hit_rate']}"]
             if b2.get("tau_F_when_sigma2F_positive"):
                 L.append(f"B2: tau_F error when sigma2_F > 0: {b2['tau_F_when_sigma2F_positive']}")
-            if b2["sandwich_coverage_interior_fits"]:
-                L.append("B2 sandwich coverage (interior fits): " + "; ".join(f"{n}: {d['covered']}/{d['n']} CP{[round(x,2) for x in d['cp95']]}" for n, d in b2["sandwich_coverage_interior_fits"].items()))
+            if b2["sandwich_coverage"]:
+                L.append("B2 sandwich coverage, conditional on an interior fit (unconditional in brackets): " + "; ".join(
+                    f"{n}: {d['cond_covered']}/{d['cond_n']} [{d['uncond_covered']}/{d['uncond_n']}]" for n, d in b2["sandwich_coverage"].items()))
         if c["heldout_prediction"]:
             L += ["", "Held-out (population-marginal; not next-response) score differences, mean over reps:"]
             for k, v in c["heldout_prediction"].items():

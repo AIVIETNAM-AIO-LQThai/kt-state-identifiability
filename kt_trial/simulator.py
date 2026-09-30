@@ -4,7 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.special import ndtri
 
 from .config import generating_theta_dict, rng_for
 from .moments import Theta, histories

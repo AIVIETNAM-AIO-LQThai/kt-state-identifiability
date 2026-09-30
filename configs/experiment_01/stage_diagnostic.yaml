@@ -1,0 +1,30 @@
+# Stage 2 diagnostic (approved with null bootstrap B=49, decision D20). Not confirmatory: thresholds here are descriptive.
+stage: diagnostic
+master_seed: 20261101
+scenarios: [S1, S2, S3, S4a, S4b, S5, S6, S7, S8, S8n]
+N_list: [300]
+replications: 3
+models: [B0, B1, B2]
+n_starts: 5
+heldout_N: 300
+sandwich: true
+null_bootstrap:
+  B: 49
+  datasets:
+    - {scenario: S1, rep: 0}
+    - {scenario: S1, rep: 1}
+    - {scenario: S1, rep: 2}
+    - {scenario: S2, rep: 0}
+    - {scenario: S2, rep: 1}
+    - {scenario: S2, rep: 2}
+    - {scenario: S8n, rep: 0}
+    - {scenario: S8n, rep: 1}
+    - {scenario: S8n, rep: 2}
+learner_bootstrap:
+  B: 50
+  model: B2
+  datasets:
+    - {scenario: S1, rep: 0}
+# measured per-start seconds with the D19 stopping rule (B0 22 s, B1 47 s, B2 66 s per 5-start fit at N=300)
+cost_model_sec_per_start: {B0: 4.4, B1: 9.0, B2: 13.2}
+budget: {max_cpu_hours: 20, max_wall_minutes: 360, workers: 4}

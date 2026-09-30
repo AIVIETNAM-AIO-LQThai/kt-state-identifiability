@@ -218,7 +218,7 @@ def job_state(rd: Path, j: dict, chash: str) -> str:
         return "corrupt"
 
 
-def check_manifest(rd: Path, current: dict, allow_mismatch: bool) -> list[str]:
+def check_manifest(rd: Path, current: dict) -> list[str]:
     mp = rd / "manifest.json"
     if not mp.exists():
         return []
@@ -260,7 +260,7 @@ def run_stage(stage_path, results_root="results/experiment_01", workers=None, dr
             out(f"  ... {len(jobs['phase1'])} fit jobs; {len(jobs['phase2'])} replicate jobs follow")
         return 0
     cur = provenance()
-    diffs = check_manifest(rd, cur, allow_mismatch)
+    diffs = check_manifest(rd, cur)
     if diffs and not allow_mismatch:
         out("REFUSED: existing results were produced with a different code/software state:")
         for d in diffs:

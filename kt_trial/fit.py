@@ -16,6 +16,11 @@ from .schedule import Template
 CONVERGED_PREFIX = "CONVERGENCE"          # scipy: "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL" / "REL_REDUCTION_OF_F..."
 
 
+def effective_gtol(cfg_fit: dict, scale: float) -> float:
+    """Per-pair-objective gradient tolerance equal to `gtol_abs` log-likelihood units, whatever N is (D19)."""
+    return cfg_fit["gtol_abs"] / scale
+
+
 def default_theta(cfg_fit: dict, K: int) -> Theta:
     s = cfg_fit["start"]
     Sig = s["sigma_M"]["ind"] * np.eye(K) + s["sigma_M"]["common"] * np.ones((K, K))
@@ -57,15 +62,20 @@ def _one_start(obj: Objective, x0, cfg_fit) -> dict:
     x0 = np.clip(x0, obj.pm.lb, obj.pm.ub)
     try:
         res = minimize(obj, x0, jac=True, method="L-BFGS-B", bounds=list(zip(obj.pm.lb, obj.pm.ub)),
-                       options=dict(maxiter=cfg_fit["max_iter"], ftol=cfg_fit["ftol"], gtol=cfg_fit["gtol"], maxcor=20))
+                       options=dict(maxiter=cfg_fit["max_iter"], ftol=cfg_fit["ftol"],
+                                    gtol=effective_gtol(cfg_fit, obj.scale), maxcor=20))
         x = res.x
         f, g = obj(x)
-        pg = obj.pm.project_grad(x, g)
+        pg = obj.pm.project_grad(x, g) * obj.scale             # ABSOLUTE log-likelihood units
         msg = res.message.decode() if isinstance(res.message, bytes) else str(res.message)
+        grad_inf = float(np.abs(pg).max())
+        # converged: scipy's own convergence message, or a line-search stall at a point that is stationary
+        # to within the absolute flag tolerance (the optimum is then reached to numerical precision).
+        converged = bool(msg.startswith(CONVERGED_PREFIX) or
+                         (msg.startswith("ABNORMAL") and grad_inf <= cfg_fit["grad_flag_abs"]))
         return dict(ok=True, x=x.tolist(), ll=-f * obj.scale, f=f, grad_norm=float(np.linalg.norm(pg)),
-                    grad_inf=float(np.abs(pg).max()), message=msg, n_iter=int(res.nit), n_eval=obj.n_eval,
-                    n_bad_eval=obj.bad, converged=bool(msg.startswith(CONVERGED_PREFIX)),
-                    runtime=time.time() - t0)
+                    grad_inf=grad_inf, message=msg, n_iter=int(res.nit), n_eval=obj.n_eval,
+                    n_bad_eval=obj.bad, converged=converged, runtime=time.time() - t0)
     except Exception as e:  # recorded as data, never silently dropped
         return dict(ok=False, error=repr(e), trace=traceback.format_exc(limit=3), runtime=time.time() - t0)
 
@@ -122,14 +132,15 @@ def fit_model(model: str, templates: list[Template], pc: PairCounts, cfg_fit: di
     if model == "B2" and null_fit is not None and null_fit.get("status") != "failed" and null_fit["ll"] > best["ll"] + 1e-9:
         theta = embed(Theta.from_dict(null_fit["theta"]), "B2").copy(sigma2_F=0.0)
         x = pm.theta_to_x(theta)
-        best = dict(best, ll=null_fit["ll"], grad_norm=float("nan"), converged=True, message="embedded_null")
+        best = dict(best, ll=null_fit["ll"], grad_norm=float("nan"), grad_inf=float("nan"), converged=True,
+                    message="embedded_null")
         fell_back = True
     tol = cfg_fit["boundary_tol"]
     hits = pm.boundary_hits(x, tol)
     flags = [f"boundary:{h}" for h in hits]
     if not best["converged"]:
         flags.append("not_converged")
-    if best["grad_norm"] == best["grad_norm"] and best["grad_norm"] > cfg_fit["grad_flag_tol"]:
+    if best.get("grad_inf", 0.0) == best.get("grad_inf", 0.0) and best.get("grad_inf", 0.0) > cfg_fit["grad_flag_abs"]:
         flags.append("large_projected_gradient")
     if any(r["n_bad_eval"] > 0 for r in good):
         flags.append("nonfinite_objective_encountered")
@@ -137,20 +148,27 @@ def fit_model(model: str, templates: list[Template], pc: PairCounts, cfg_fit: di
         flags.append("embedded_null_selected")
     lls = np.array([r["ll"] for r in good])
     norm = pc.counts.sum()
-    agree = lls >= lls.max() - 1e-6 * norm
+    ll_best = float(lls.max())                          # best START (independent of the embedded-null candidate)
+    at_best = np.array([r["ll"] >= ll_best - cfg_fit["agree_tol"] for r in good])
+    secondary = np.array([bool(r["converged"]) and r["ll"] < ll_best - cfg_fit["secondary_delta"] for r in good])
     xs = np.array([r["x"] for r in good])
-    thetas = [pm.x_to_theta(v) for v in xs[agree]]
-    gap = float(max(np.abs(a.to_nat()[:8] - b.to_nat()[:8]).max() for a in thetas for b in thetas))
-    if agree.sum() < 2:
-        flags.append("no_start_agreement")
+    thetas = [pm.x_to_theta(v) for v in xs[at_best]]
+    names_cmp = list(range(8))
+    if theta.sigma2_F <= tol and model == "B2":
+        names_cmp.remove(7)                              # tau_F is inert when sigma2_F = 0
+    gap = float(max(np.abs(a.to_nat()[names_cmp] - b.to_nat()[names_cmp]).max() for a in thetas for b in thetas))
+    if at_best.sum() < 2:
+        flags.append("single_start_at_best")
+    if secondary.any():
+        flags.append("secondary_optima_present")
     if model == "B2" and theta.sigma2_F <= tol:
         flags.append("tau_F_not_identified(sigma2_F=0)")
     out.update(status="ok" if not ({"not_converged", "all_starts_failed"} & set(flags)) else "flagged",
                theta=theta.to_dict(), x=x.tolist(), ll=float(best["ll"]), loglik_per_pair=float(best["ll"] / norm),
-               grad_norm=best["grad_norm"], converged=bool(best["converged"]), message=best["message"],
+               grad_norm=best["grad_norm"], grad_inf_abs=best["grad_inf"], converged=bool(best["converged"]), message=best["message"],
                boundary_hits=hits, flags=flags, n_starts=len(starts), n_good_starts=len(good),
-               start_agreement={"n_within_1e-6_per_pair": int(agree.sum()), "max_scalar_param_gap": gap,
-                                "ll_range": float(lls.max() - lls.min())},
+               start_agreement={"n_starts_at_best": int(at_best.sum()), "secondary_optima": int(secondary.sum()),
+                                "max_scalar_param_gap": gap, "ll_range": float(lls.max() - lls.min())},
                n_iter_total=int(sum(r.get("n_iter", 0) for r in good)),
                n_eval_total=int(sum(r.get("n_eval", 0) for r in good)), runtime=time.time() - t0)
     return out

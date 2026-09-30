@@ -76,7 +76,7 @@ def test_code_mismatch_is_refused(tiny_run):
     (rd / "manifest.json").write_text(json.dumps(m))
     lines = []
     assert run_stage(cfgp, d / "res", workers=1, out=lines.append) == 3 and any("REFUSED" in l for l in lines)
-    assert check_manifest(rd, provenance(), False)
+    assert check_manifest(rd, provenance())
 
 
 def test_failed_job_recorded_as_data(tmp_path):
