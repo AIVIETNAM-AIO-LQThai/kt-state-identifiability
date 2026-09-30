@@ -12,7 +12,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .bvn import cell_probs_and_grads, weighted_cell_loglik
+from .bvn import cell_probs_and_grads, weighted_cell_loglik_obs
 from .kernels import dfast_dtauR, dslow_dphi, fast_kernel, slow_kernel
 from .moments import N_SCALAR, Theta, latent_moments, moment_jacobians, ou_kernel, tril_idx
 from .schedule import Template
@@ -128,7 +128,7 @@ def composite_loglik(theta: Theta, templates: list[Template], pc: PairCounts, gr
         a[g] = mu / sd
         rho[g] = V[iu, ju] / (sd[iu] * sd[ju])
         moms.append((mu, V))
-    ll, w, nfl = weighted_cell_loglik(a[:, iu], a[:, ju], rho, pc.counts, P_FLOOR, grad=grad)
+    ll, w, nfl = weighted_cell_loglik_obs(a, iu, ju, rho, pc.counts, P_FLOOR, grad=grad)
     diag = {"n_floored_cells": nfl, "finite": bool(np.isfinite(ll)), "max_abs_rho": float(np.abs(rho).max())}
     if not grad:
         return ll, None, diag

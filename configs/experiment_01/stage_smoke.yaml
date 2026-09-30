@@ -1,0 +1,22 @@
+# Stage 1 smoke: pipeline verification only. NOT evidence for the research claim.
+stage: smoke
+master_seed: 20261001
+scenarios: [S1, S2]
+N_list: [64]
+replications: 2
+models: [B0, B1, B2]
+n_starts: 5
+heldout_N: 64
+sandwich: true
+null_bootstrap:
+  B: 19
+  datasets:
+    - {scenario: S1, rep: 0}
+    - {scenario: S2, rep: 0}
+learner_bootstrap:
+  B: 10
+  model: B2
+  datasets:
+    - {scenario: S1, rep: 0}
+cost_model_sec_per_start: {B0: 4.0, B1: 7.0, B2: 15.0}
+budget: {max_cpu_hours: 1.0, max_wall_minutes: 30, workers: 4}

@@ -57,7 +57,7 @@ def _one_start(obj: Objective, x0, cfg_fit) -> dict:
     x0 = np.clip(x0, obj.pm.lb, obj.pm.ub)
     try:
         res = minimize(obj, x0, jac=True, method="L-BFGS-B", bounds=list(zip(obj.pm.lb, obj.pm.ub)),
-                       options=dict(maxiter=cfg_fit["max_iter"], ftol=1e-14, gtol=cfg_fit["gtol"], maxcor=20))
+                       options=dict(maxiter=cfg_fit["max_iter"], ftol=cfg_fit["ftol"], gtol=cfg_fit["gtol"], maxcor=20))
         x = res.x
         f, g = obj(x)
         pg = obj.pm.project_grad(x, g)

@@ -12,7 +12,18 @@ def test_bvn_against_scipy():
             a, b = rng.normal(size=2) * 1.8
             ref = mvn.cdf([a, b], mean=[0, 0], cov=[[1, rho], [rho, 1]], abseps=1e-13, releps=1e-13)
             worst = max(worst, abs(float(bvn_cdf(a, b, rho)) - ref))
-    assert worst < 1e-10
+    assert worst < 1e-11
+
+
+def test_series_branch_matches_scipy_over_wide_arguments():
+    rng = np.random.default_rng(4)
+    worst = 0.0
+    for rho in [-0.35, -0.1, 0.02, 0.2, 0.35, 0.36, 0.5]:            # straddles the series / quadrature switch
+        for _ in range(40):
+            a, b = rng.uniform(-5.5, 5.5, 2)
+            ref = mvn.cdf([a, b], mean=[0, 0], cov=[[1, rho], [rho, 1]], abseps=1e-14, releps=1e-14)
+            worst = max(worst, abs(float(bvn_cdf(a, b, rho)) - ref))
+    assert worst < 1e-11
 
 
 def test_independent_and_symmetry():

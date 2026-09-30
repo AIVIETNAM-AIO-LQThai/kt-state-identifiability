@@ -36,7 +36,8 @@ fit:
   tau_R_grid: [1.0, 3.0, 6.0, 12.0, 25.0]
   jitter_sd: 0.15
   max_iter: 400
-  gtol: 1.0e-6
+  ftol: 1.0e-11
+  gtol: 1.0e-5
   boundary_tol: 1.0e-6
   grad_flag_tol: 1.0e-4
   start:                            # truth-independent default start

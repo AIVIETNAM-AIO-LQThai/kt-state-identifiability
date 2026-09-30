@@ -77,12 +77,15 @@ def simulate(cfg: dict, N: int, seed_keys: tuple, master_seed: int, templates: l
                 Zall[idx, t] = z
             # S7: practice error shifts F; the jump then evolves with the OU transition to the next attempt
             jumped = np.where(tpl.practice[t] & ~y, jump, 0.0) if jump != 0.0 else np.zeros(n)
+    def _corr(x, y):
+        return float(np.corrcoef(x, y)[0, 1]) if N > 2 and x.std() > 0 and y.std() > 0 else None
+
+    def _cv(x):
+        return float(x.std() / abs(x.mean())) if N > 2 and x.mean() != 0 else None
+
     meta = {"scenario": cfg["scenario"]["id"], "N": int(N), "seed_keys": [str(k) for k in seed_keys],
             "master_seed": int(master_seed), "violations": cfg["scenario"]["violations"],
-            "realised": {"corr_alpha_r": float(np.corrcoef(alpha_u, r_u)[0, 1]) if N > 2 else None,
-                         "corr_alpha_meanM0": float(np.corrcoef(alpha_u, M0.mean(1))[0, 1]) if N > 2 else None,
-                         "cv_alpha": float(alpha_u.std() / abs(alpha_u.mean())) if N > 2 else None,
-                         "cv_r": float(r_u.std() / abs(r_u.mean())) if N > 2 and r_u.mean() != 0 else None,
-                         "mean_success": float(Y.mean())}}
+            "realised": {"corr_alpha_r": _corr(alpha_u, r_u), "corr_alpha_meanM0": _corr(alpha_u, M0.mean(1)),
+                         "cv_alpha": _cv(alpha_u), "cv_r": _cv(r_u), "mean_success": float(Y.mean())}}
     latent = {"M0": M0, "alpha": alpha_u, "r": r_u, "F": Fall, "Z": Zall} if keep_latent else None
     return Dataset(Y, tid, meta, latent)

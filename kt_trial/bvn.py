@@ -23,18 +23,40 @@ def _pdf(x):
 def _integral(a, b, rho, nodes):
     x, w = _RULES[nodes]
     half = 0.5 * np.arcsin(rho)
-    th = half[..., None] * (x + 1.0)                       # nodes on [0, asin rho]
-    ex = np.exp(-(a[..., None] ** 2 - 2.0 * a[..., None] * b[..., None] * np.sin(th) + b[..., None] ** 2)
-                / (2.0 * np.cos(th) ** 2))
+    sn = np.sin(half[..., None] * (x + 1.0))               # sin(theta) at nodes on [0, asin rho]
+    q = a * a + b * b
+    ab2 = 2.0 * a * b
+    ex = np.exp(-(q[..., None] - ab2[..., None] * sn) / (2.0 * (1.0 - sn * sn)))
     return half * (ex @ w) / (2.0 * np.pi)                 # int_0^{asin rho} f dtheta / (2 pi)
+
+
+SERIES_RHO = 0.35
+SERIES_TERMS = 24
+
+
+def _series(a, b, rho):
+    """Tetrachoric series: Phi2 - Phi(a)Phi(b) = phi(a)phi(b) sum_{k>=1} rho^k/k! He_{k-1}(a) He_{k-1}(b)."""
+    ha0, ha1 = np.ones_like(a), a
+    hb0, hb1 = np.ones_like(b), b
+    coef = rho.copy()                                   # rho^k / k!
+    acc = coef.copy()                                   # k = 1 term: He_0 He_0 = 1
+    for k in range(2, SERIES_TERMS + 1):
+        coef = coef * rho / k
+        acc += coef * ha1 * hb1                         # He_{k-1}(a) He_{k-1}(b)
+        ha0, ha1 = ha1, a * ha1 - (k - 1) * ha0
+        hb0, hb1 = hb1, b * hb1 - (k - 1) * hb0
+    return _pdf(a) * _pdf(b) * acc
 
 
 def bvn_cdf(a, b, rho):
     a, b, rho = np.broadcast_arrays(np.asarray(a, float), np.asarray(b, float), np.asarray(rho, float))
     rho = np.clip(rho, -RHO_MAX, RHO_MAX)
     out = np.empty(a.shape)
-    lo = 0.0
     todo = np.ones(a.shape, bool)
+    m = np.abs(rho) <= SERIES_RHO
+    if m.any():
+        out[m] = _series(a[m], b[m], rho[m])
+    todo &= ~m
     for hi, n in _TIERS:
         m = todo & (np.abs(rho) <= hi)
         if m.any():
@@ -85,5 +107,28 @@ def weighted_cell_loglik(a, b, rho, counts, p_floor=1e-300, grad=True):
     s = np.sqrt(1.0 - rho * rho)
     w = np.stack([_pdf(a) * ndtr((b - rho * a) / s) * delta + _pdf(a) * (r[..., 1] - r[..., 3]),
                   _pdf(b) * ndtr((a - rho * b) / s) * delta + _pdf(b) * (r[..., 2] - r[..., 3]),
+                  bvn_pdf(a, b, rho) * delta], -1)
+    return ll, w, nf
+
+
+def weighted_cell_loglik_obs(a_obs, iu, ju, rho, counts, p_floor=1e-300, grad=True):
+    """As weighted_cell_loglik, but Phi(a), phi(a) are evaluated once per observation (a_obs: (G,T)) and gathered."""
+    rho = np.clip(rho, -RHO_MAX, RHO_MAX)
+    a, b = a_obs[:, iu], a_obs[:, ju]
+    Po, po = ndtr(a_obs), _pdf(a_obs)
+    Pa, Pb = Po[:, iu], Po[:, ju]
+    p11 = bvn_cdf(a, b, rho)
+    p = np.stack([p11, Pa - p11, Pb - p11, 1.0 - Pa - Pb + p11], -1)
+    nf = int(((p < p_floor) & (counts > 0)).sum())
+    pf = np.maximum(p, p_floor)
+    ll = float(np.sum(np.where(counts > 0, counts * np.log(pf), 0.0)))
+    if not grad:
+        return ll, None, nf
+    r = counts / pf
+    delta = r[..., 0] - r[..., 1] - r[..., 2] + r[..., 3]
+    s = np.sqrt(1.0 - rho * rho)
+    pa, pb = po[:, iu], po[:, ju]
+    w = np.stack([pa * (ndtr((b - rho * a) / s) * delta + r[..., 1] - r[..., 3]),
+                  pb * (ndtr((a - rho * b) / s) * delta + r[..., 2] - r[..., 3]),
                   bvn_pdf(a, b, rho) * delta], -1)
     return ll, w, nf
