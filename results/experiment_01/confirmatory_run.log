@@ -163,3 +163,13 @@ estimated cost: 108.48 CPU-h, ~1627 min wall on 4 workers
   fit__S8n__N1000__r18 ok 73s  [159 run, 0 error, 62.3 min]
   fit__S8n__N1000__r19 ok 76s  [160 run, 0 error, 62.4 min]
 [phase2] 4770 jobs to run (0 already valid/recorded)
+  null_rep__S2__N300__r0__b1 ok 53s  [161 run, 0 error, 63.4 min]
+  null_rep__S2__N300__r0__b0 ok 69s  [162 run, 0 error, 63.6 min]
+  null_rep__S2__N300__r0__b2 ok 92s  [163 run, 0 error, 64.0 min]
+  null_rep__S2__N300__r0__b3 ok 94s  [164 run, 0 error, 64.0 min]
+  null_rep__S2__N300__r0__b4 ok 67s  [165 run, 0 error, 64.5 min]
+  null_rep__S2__N300__r0__b5 ok 94s  [166 run, 0 error, 65.2 min]
+  null_rep__S2__N300__r0__b6 ok 84s  [167 run, 0 error, 65.4 min]
+  null_rep__S2__N300__r0__b7 ok 83s  [168 run, 0 error, 65.4 min]
+  null_rep__S2__N300__r0__b8 ok 85s  [169 run, 0 error, 65.9 min]
+  null_rep__S2__N300__r0__b9 ok 54s  [170 run, 0 error, 66.1 min]
