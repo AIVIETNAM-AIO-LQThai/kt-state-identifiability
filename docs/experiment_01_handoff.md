@@ -4,6 +4,38 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H2b: escalation to Opus (unblock criterion 2) (2026-09-30)
+
+```text
+MODEL HANDOFF — escalation: unblock criterion 2 fails on a numerical precision floor
+Completed: C1 (absolute-units stopping rule), C2 (summaries: NA for boundary/inactive truths; conditional + unconditional
+  coverage), C3 (absolute start-agreement metric, secondary_optima, single_start_at_best), C4 (regression tests), Stage 2 config
+  (configs/experiment_01/stage_diagnostic.yaml; dry-run 15.2 CPU-h, ~3.8 h wall, 4960 starts). Commit 391b46e.
+  Tests: full suite = all pass EXCEPT one new slow test that encodes criterion 2's gradient clause.
+  C1 evidence (fixed N=300 S1 dataset, seed 20261001): all 5 B2 starts within 0.01 log-lik of the best (previous rule: 79.4
+  units apart), 0 secondary optima, sigma2_F = 0.187, tau_F = 7.0.
+Not done: C5 (re-smoke) and Stage 2 — held until the question below is settled (a criterion change alters flag semantics and
+  therefore the code hash, so the re-smoke should run once, after the decision).
+Question for Opus: the gradient clause of criterion 2 ("absolute projected gradient <= 1e-2") cannot be met. Every start ends with
+  scipy "CONVERGENCE: RELATIVE REDUCTION OF F" (ftol = 1e-15; ftol = 0 behaves identically) at an absolute projected gradient of
+  0.03-0.18 (B1) / 0.04-0.05 (B2). Cause: the log-lik is ~2e6 in magnitude (resolution ~5e-10) and the Hessian spans eigenvalues 80 to
+  6.4e7, so the raw gradient in free coordinates is not a scale-aware precision measure. At the terminated B2 point: Newton
+  decrement g'H^-1 g / 2 = 6e-8 log-lik units; largest remaining Newton step = 2.4e-5 (log tau_F), all others < 2e-6.
+Proposal (needs Opus/user agreement because it changes an unblock criterion and the flag): replace the gradient clause and the
+  `large_projected_gradient` flag by the Newton decrement g'H^-1 g / 2 computed on the active coordinates from the FD Hessian of the
+  analytic gradient (18 extra gradient evaluations per fit, ~1 s), with threshold 1e-3 log-lik units; keep the raw gradient as a
+  recorded diagnostic. Simpler alternative: drop the gradient clause and rely on start agreement (<= 0.01 log-lik) plus convergence.
+  The failing test would be edited accordingly only after the decision; it is left unchanged and failing until then.
+Target: Opus 5.5, High, Plan Mode (short decision, no batch)
+Reason: Changing an approved unblock criterion / convergence flag is a scientific-protocol decision, not a routine bug fix.
+Switch: Manual (no session control for changing the model is exposed).
+Approval: waiting for a specific change (criterion 2 wording). Stage 2 remains blocked; Stage 3 NOT approved.
+Resume action: Opus decides criterion 2; Sonnet then edits the flag/test accordingly, runs the full suite, runs the re-smoke (C5),
+  checks all criteria and, if they pass, runs Stage 2 (B=49).
+```
+
+---
+
 ## MODEL HANDOFF — H2: Opus review → corrections + Stage 2 (2026-09-30)
 
 ```text

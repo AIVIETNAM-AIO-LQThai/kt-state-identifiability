@@ -49,3 +49,7 @@ recorded for review at the Opus smoke/audit checkpoint. "Approval" = within the 
 | D21 | Provisional MDE sigma2_F = 0.04 left unchanged for now. The Stage 3 request must propose dropping it as a confirmatory criterion or reframing it as design-based detectability, before any confirmatory data exist. S1m is not added | Design-based z ≈ 1.2 (N=300) and 2.1 (N=1000); Experiment 1 cannot demonstrate the MDE empirically | Stage 3 request | **Approved by user** (H1 review question) |
 
 Findings F1–F3 were reviewed at H1. F1 becomes limitation L3 (D21). F2 becomes L2: tau_F is secondary and interpreted only with its uncertainty. F3 is superseded by the D19/D20 re-costing.
+
+| ID | Open question (Sonnet, 2026-09-30) | Evidence | Status |
+|---|---|---|---|
+| Q1 | Unblock criterion 2 gradient clause (absolute projected gradient <= 1e-2) is unattainable: optimiser ends at the double-precision floor (raw gradient 0.03–0.18) although the Newton decrement is 6e-8 log-lik units and remaining coordinate steps are <= 2.4e-5 | see H2b entry in `docs/experiment_01_handoff.md` | **PROPOSED, not decided**: replace by Newton decrement < 1e-3 (or drop the clause); needs Opus/user agreement |
