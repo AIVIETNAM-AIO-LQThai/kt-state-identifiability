@@ -21,6 +21,37 @@ def effective_gtol(cfg_fit: dict, scale: float) -> float:
     return cfg_fit["gtol_abs"] / scale
 
 
+def newton_certificate(pm: ParamMap, obj: "Objective", x, theta: Theta, cfg_fit: dict) -> dict:
+    """D22: Newton decrement g'H^-1 g / 2 (absolute log-lik units) on the active free coordinates.
+
+    Active = strictly inside the bounds; tau_F is dropped when sigma2_F = 0 and tau_R when the fast component is
+    absent. H is the symmetrised central-difference Jacobian of the analytic gradient of -loglik. A non-positive-
+    definite H returns hessian_not_pd = True and a NaN decrement.
+    """
+    tol = cfg_fit["boundary_tol"]
+    x = np.asarray(x, float)
+    act = [i for i in range(pm.n) if pm.lb[i] + tol < x[i] < pm.ub[i] - tol]
+    drop = []
+    if "tau_F" in pm.names and theta.sigma2_F <= tol:
+        drop.append("tau_F")
+    if "tau_R" in pm.names and theta.sigma2_r <= tol and abs(theta.r_bar) <= tol:
+        drop.append("tau_R")
+    act = [i for i in act if pm.names[i] not in drop]
+    S = obj.scale
+    g = obj(x)[1][act] * S
+    H = np.zeros((len(act), len(act)))
+    for a, i in enumerate(act):
+        h = cfg_fit["hess_step"] * max(1.0, abs(x[i]))
+        xp, xm = x.copy(), x.copy(); xp[i] += h; xm[i] -= h
+        H[a] = ((obj(xp)[1] - obj(xm)[1]) / (2 * h))[act] * S
+    H = 0.5 * (H + H.T)
+    w = np.linalg.eigvalsh(H) if len(act) else np.array([1.0])
+    not_pd = bool(not np.all(np.isfinite(H)) or w.min() <= 0)
+    dec = float("nan") if not_pd else float(0.5 * g @ np.linalg.solve(H, g)) if len(act) else 0.0
+    return {"newton_decrement": dec, "hessian_min_eig": float(w.min()), "hessian_not_pd": not_pd,
+            "active_coords": [pm.names[i] for i in act]}
+
+
 def default_theta(cfg_fit: dict, K: int) -> Theta:
     s = cfg_fit["start"]
     Sig = s["sigma_M"]["ind"] * np.eye(K) + s["sigma_M"]["common"] * np.ones((K, K))
@@ -69,10 +100,7 @@ def _one_start(obj: Objective, x0, cfg_fit) -> dict:
         pg = obj.pm.project_grad(x, g) * obj.scale             # ABSOLUTE log-likelihood units
         msg = res.message.decode() if isinstance(res.message, bytes) else str(res.message)
         grad_inf = float(np.abs(pg).max())
-        # converged: scipy's own convergence message, or a line-search stall at a point that is stationary
-        # to within the absolute flag tolerance (the optimum is then reached to numerical precision).
-        converged = bool(msg.startswith(CONVERGED_PREFIX) or
-                         (msg.startswith("ABNORMAL") and grad_inf <= cfg_fit["grad_flag_abs"]))
+        converged = bool(msg.startswith(CONVERGED_PREFIX))     # ABNORMAL stalls are re-judged by the D22 certificate
         return dict(ok=True, x=x.tolist(), ll=-f * obj.scale, f=f, grad_norm=float(np.linalg.norm(pg)),
                     grad_inf=grad_inf, message=msg, n_iter=int(res.nit), n_eval=obj.n_eval,
                     n_bad_eval=obj.bad, converged=converged, runtime=time.time() - t0)
@@ -138,10 +166,19 @@ def fit_model(model: str, templates: list[Template], pc: PairCounts, cfg_fit: di
     tol = cfg_fit["boundary_tol"]
     hits = pm.boundary_hits(x, tol)
     flags = [f"boundary:{h}" for h in hits]
+    if fell_back:
+        cert = dict(null_fit["certificate"], reused_from="B1")
+    else:
+        cert = newton_certificate(pm, obj, x, theta, cfg_fit)
+    if not best["converged"] and best["message"].startswith("ABNORMAL") and not cert["hessian_not_pd"] \
+            and cert["newton_decrement"] <= cfg_fit["newton_tol"]:
+        best = dict(best, converged=True)                 # line-search stall at a certified optimum
     if not best["converged"]:
         flags.append("not_converged")
-    if best.get("grad_inf", 0.0) == best.get("grad_inf", 0.0) and best.get("grad_inf", 0.0) > cfg_fit["grad_flag_abs"]:
-        flags.append("large_projected_gradient")
+    if cert["hessian_not_pd"]:
+        flags.append("hessian_not_pd")
+    elif cert["newton_decrement"] > cfg_fit["newton_tol"]:
+        flags.append("newton_decrement_large")
     if any(r["n_bad_eval"] > 0 for r in good):
         flags.append("nonfinite_objective_encountered")
     if fell_back:
@@ -165,7 +202,7 @@ def fit_model(model: str, templates: list[Template], pc: PairCounts, cfg_fit: di
         flags.append("tau_F_not_identified(sigma2_F=0)")
     out.update(status="ok" if not ({"not_converged", "all_starts_failed"} & set(flags)) else "flagged",
                theta=theta.to_dict(), x=x.tolist(), ll=float(best["ll"]), loglik_per_pair=float(best["ll"] / norm),
-               grad_norm=best["grad_norm"], grad_inf_abs=best["grad_inf"], converged=bool(best["converged"]), message=best["message"],
+               grad_norm=best["grad_norm"], grad_inf_abs=best["grad_inf"], certificate=cert, converged=bool(best["converged"]), message=best["message"],
                boundary_hits=hits, flags=flags, n_starts=len(starts), n_good_starts=len(good),
                start_agreement={"n_starts_at_best": int(at_best.sum()), "secondary_optima": int(secondary.sum()),
                                 "max_scalar_param_gap": gap, "ll_range": float(lls.max() - lls.min())},

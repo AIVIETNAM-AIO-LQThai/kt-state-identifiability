@@ -91,6 +91,12 @@ def summarize(rd) -> dict:
                   "starts_at_best_mean": float(np.mean([f["start_agreement"]["n_starts_at_best"] for f in good])) if good else None,
                   "single_start_at_best_rate": float(np.mean([f["start_agreement"]["n_starts_at_best"] < 2 for f in good])) if good else None,
                   "secondary_optima_rate": float(np.mean([f["start_agreement"]["secondary_optima"] > 0 for f in good])) if good else None,
+                  "max_newton_decrement": (float(np.nanmax([f["certificate"]["newton_decrement"] for f in good]))
+                                           if good and not np.all(np.isnan([f["certificate"]["newton_decrement"] for f in good])) else None),
+                  "hessian_not_pd_count": int(sum(f["certificate"]["hessian_not_pd"] for f in good)),
+                  "hessian_not_pd_outside_allowance": int(sum(
+                      f["certificate"]["hessian_not_pd"] and not (m == "B2" and f["theta"]["sigma2_F"] < 0.02) for f in good)),
+                  "newton_decrement_large_count": int(sum("newton_decrement_large" in f["flags"] for f in good)),
                   "max_abs_projected_gradient": float(np.nanmax([f["grad_inf_abs"] for f in good])) if good and not np.all(np.isnan([f["grad_inf_abs"] for f in good])) else None}
             bh = defaultdict(int)
             for f in good:
@@ -199,12 +205,13 @@ def to_markdown(s: dict) -> str:
         L += ["> Smoke stage: verifies the pipeline. It is **not** evidence for the research claim.", ""]
     for key, c in s["cells"].items():
         L += [f"## {key}  (fit N={c['N_fit']}, held-out N={c['N_heldout']}, generated {c['N_total_generated']}; {c['n_reps']} reps; violations: {c['violations'] or 'none'})", ""]
-        L += ["| model | fits | failed | converged | flagged | starts at best (mean) | single-start-best rate | secondary-optima rate | max abs proj. grad | mean s/fit |",
-              "|---|---|---|---|---|---|---|---|---|---|"]
+        L += ["| model | fits | failed | converged | flagged | starts at best (mean) | single-start-best rate | secondary-optima rate | max Newton decrement | H not PD (outside allowance) | mean s/fit |",
+              "|---|---|---|---|---|---|---|---|---|---|---|"]
         for m, mc in c["models"].items():
             L.append(f"| {m} | {mc['n_fits']} | {mc['n_failed']} | {_f(mc['convergence_rate'],2)} | {_f(mc['flagged_rate'],2)} | "
                      f"{_f(mc['starts_at_best_mean'],1)} | {_f(mc['single_start_at_best_rate'],2)} | {_f(mc['secondary_optima_rate'],2)} | "
-                     f"{_f(mc['max_abs_projected_gradient'],4)} | {mc['runtime_sec_mean']:.0f} |")
+                     f"{mc['max_newton_decrement'] if mc['max_newton_decrement'] is None else format(mc['max_newton_decrement'], '.2e')} | "
+                     f"{mc['hessian_not_pd_count']} ({mc['hessian_not_pd_outside_allowance']}) | {mc['runtime_sec_mean']:.0f} |")
         L += ["", "| model | param | truth | bias | MCSE(bias) | RMSE | n |", "|---|---|---|---|---|---|---|"]
         for m, mc in c["models"].items():
             for n, p in mc["params"].items():

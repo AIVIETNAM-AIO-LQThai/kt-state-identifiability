@@ -38,7 +38,9 @@ fit:
   max_iter: 3000
   ftol: 1.0e-15
   gtol_abs: 1.0e-3                  # stopping rule in ABSOLUTE log-likelihood units (D19); N-invariant
-  grad_flag_abs: 1.0e-2             # flag fits whose absolute projected gradient exceeds this
+  newton_tol: 1.0e-3                # D22: flag a fit when the Newton decrement g'H^-1 g/2 exceeds this (log-lik units)
+  hess_step: 1.0e-5                 # central-difference step (times max(1,|x|)) for H from the analytic gradient
+  not_pd_sigma2F_allowance: 0.02    # D22: hessian_not_pd is tolerated only for B2 fits with sigma2_F below this
   boundary_tol: 1.0e-6
   agree_tol: 0.01                   # a start is "at the best" if within this many log-lik units
   secondary_delta: 0.5              # a converged start this far below the best is a secondary optimum

@@ -38,8 +38,50 @@ def test_all_b2_starts_reach_the_same_optimum_on_fixed_n300_dataset():
     ll = np.array([r["ll"] for r in f2["runs"] if r.get("ok")])
     assert ll.max() - ll.min() < 0.01, ll - ll.max()
     assert f2["start_agreement"]["n_starts_at_best"] == 5 and f2["start_agreement"]["secondary_optima"] == 0
-    assert f2["converged"] and f2["grad_norm"] < cfg["fit"]["grad_flag_abs"]
+    cert = f2["certificate"]
+    assert f2["converged"] and not cert["hessian_not_pd"]
+    assert cert["newton_decrement"] <= cfg["fit"]["newton_tol"], cert          # D22 certificate, not the raw gradient
+    assert "newton_decrement_large" not in f2["flags"] and "hessian_not_pd" not in f2["flags"]
     assert abs(f2["theta"]["sigma2_F"] - 0.187) < 0.01
+
+
+def test_newton_decrement_matches_actual_loglik_gap():
+    """Near an optimum g'H^-1 g / 2 must equal the log-lik deficit (quadratic regime), within 20%."""
+    from kt_trial.fit import default_theta, newton_certificate
+    cfg = load_scenario("S1")
+    ts = build_templates(cfg)[:2]
+    fit_cfg = dict(cfg["fit"], n_starts=1)
+    ds = simulate(cfg, 400, ("cert",), 3, ts)
+    pc = pair_counts(ds.Y, ds.template_id, 2)
+    f = fit_model("B0", ts, pc, fit_cfg, 4, ("cert",), 3)
+    pm = ParamMap("B0", 4)
+    obj = Objective(pm, ts, pc)
+    x_star = np.array(f["x"])
+    assert f["certificate"]["newton_decrement"] < 1e-3 and not f["certificate"]["hessian_not_pd"]
+    d = np.random.default_rng(0).normal(size=pm.n)
+    for scale in (0.004, 0.008):
+        x = np.clip(x_star + scale * d / np.abs(d).max(), pm.lb, pm.ub)
+        gap = obj.loglik(x_star) - obj.loglik(x)
+        cert = newton_certificate(pm, obj, x, pm.x_to_theta(x), fit_cfg)
+        assert gap > 1e-3
+        assert abs(cert["newton_decrement"] - gap) / gap < 0.2, (cert["newton_decrement"], gap)
+
+
+def test_hessian_not_pd_is_reported():
+    from kt_trial.fit import newton_certificate
+    cfg = load_scenario("S1")
+    pm = ParamMap("B0", 4)
+
+    class Indefinite:                      # -loglik gradient = -x  =>  Hessian = -I (concave in -loglik)
+        scale = 1.0
+
+        def __call__(self, x):
+            return 0.0, -np.asarray(x)
+
+    x = 0.5 * (pm.lb + pm.ub) * 0.1
+    x = np.clip(x + 0.1, pm.lb + 0.1, pm.ub - 0.1)
+    cert = newton_certificate(pm, Indefinite(), x, pm.x_to_theta(x), cfg["fit"])
+    assert cert["hessian_not_pd"] and np.isnan(cert["newton_decrement"])
 
 
 def test_truth_status_marks_boundary_and_inactive_truths():
@@ -56,6 +98,8 @@ def test_truth_status_marks_boundary_and_inactive_truths():
 def _fake_fit(theta, ll=0.0):
     return {"status": "ok", "converged": True, "runtime": 1.0, "theta": theta, "ll": ll, "flags": [],
             "boundary_hits": [], "grad_inf_abs": 1e-4, "grad_norm": 1e-4,
+            "certificate": {"newton_decrement": 1e-9, "hessian_min_eig": 1.0, "hessian_not_pd": False,
+                            "active_coords": []},
             "start_agreement": {"n_starts_at_best": 5, "secondary_optima": 0},
             "errors": {}}
 
