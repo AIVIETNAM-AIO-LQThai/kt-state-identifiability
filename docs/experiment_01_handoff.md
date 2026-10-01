@@ -4,6 +4,26 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H5b: cloud attempt stopped → user runs Stage 3 locally from scratch (2026-10-01)
+
+```text
+MODEL HANDOFF — Stage 3 cloud attempt aborted (D28); user runs the frozen matrix locally
+Completed: Stage 3 started in the cloud at the user's request (frozen command, sha256 da9c7d9a…8857); 649/4,930 jobs done, 0 job errors;
+  container reclaimed twice when the session was idle, so progress only occurred while active; user chose to finish locally from scratch.
+  Cloud run stopped, keep-alive triggers deleted, partial outputs archived to results/experiment_01/archive_cloud_partial_stage3/
+  (not summarised, not inspected, not mixed). Protocol, code and config unchanged.
+Next task: NOT for a model. The user runs docs/experiment_01_stage3_local_run.md in full (~27 h on 4 workers) and pushes
+  results/experiment_01/confirmatory/. Afterwards Opus reads summary.json/summary.md (PH1–PH6), failure accounting and manifest and
+  writes the final interpretation and limitations (docs/experiment_01_final_report.md).
+Target: Opus 5.5, High, Plan Mode (after the results are pushed)
+Reason: Final scientific interpretation; evaluate exactly which claims the results support.
+Switch: Manual (no session control for changing the model is exposed).
+Approval: Stage 3 protocol approved (D23–D25); venue per D28. No protocol change after seeing results.
+Resume action: When the user has pushed the results: `Switched to Opus; final interpretation`.
+```
+
+---
+
 ## MODEL HANDOFF — H5: Stage 3 frozen → user runs locally → Opus final interpretation (2026-09-30)
 
 ```text
