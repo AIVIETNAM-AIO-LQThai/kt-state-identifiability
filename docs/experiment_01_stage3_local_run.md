@@ -1,6 +1,6 @@
 # Stage 3 (confirmatory) — how to run it on your Windows machine
 
-**You run this; nothing here has been run.** Approved protocol: decisions D23–D25 (`docs/experiment_01_decisions.md`), plan addendum
+**You run this. It must be a complete run from scratch: an earlier partial cloud attempt (649 of 4,930 jobs) was stopped and its outputs were moved to `results/experiment_01/archive_cloud_partial_stage3/`, so `results\\experiment_01\\confirmatory\\` starts empty and the runner has nothing to skip or mix.** Approved protocol: decisions D23–D25 (`docs/experiment_01_decisions.md`), plan addendum
 "H3 OPUS REVIEW" (`docs/experiment_01_plan.md`). The configuration is frozen; the runner refuses to start unless the hash below matches.
 
 | item | value |
