@@ -636,3 +636,31 @@ estimated cost: 108.48 CPU-h, ~1627 min wall on 4 workers
   null_rep__S2__N300__r4__b68 ok 56s  [175 run, 0 error, 35.8 min]
   null_rep__S2__N300__r4__b69 ok 38s  [176 run, 0 error, 35.8 min]
   null_rep__S2__N300__r4__b70 ok 39s  [177 run, 0 error, 35.9 min]
+=== RESTART 00:32 UTC (second container restart) ===
+stage=confirmatory config_hash=1b1307a48a5a results_dir=results/experiment_01/confirmatory/1b1307a48a
+job matrix: {'fit': 160, 'null_rep': 4720, 'lboot_rep': 50}  optimizer starts: {'fit': 2400, 'null_rep': 47200, 'lboot_rep': 100} (total 49700)
+estimated cost: 108.48 CPU-h, ~1627 min wall on 4 workers
+[phase1] 0 jobs to run (160 already valid/recorded)
+[phase2] 4303 jobs to run (467 already valid/recorded)
+  null_rep__S2__N300__r4__b73 ok 41s  [1 run, 0 error, 0.7 min]
+  null_rep__S2__N300__r4__b71 ok 44s  [2 run, 0 error, 0.7 min]
+  null_rep__S2__N300__r4__b72 ok 45s  [3 run, 0 error, 0.8 min]
+  null_rep__S2__N300__r4__b74 ok 47s  [4 run, 0 error, 0.8 min]
+  null_rep__S2__N300__r4__b76 ok 30s  [5 run, 0 error, 1.2 min]
+  null_rep__S2__N300__r4__b77 ok 53s  [6 run, 0 error, 1.6 min]
+  null_rep__S2__N300__r4__b78 ok 59s  [7 run, 0 error, 1.8 min]
+  null_rep__S2__N300__r4__b79 ok 33s  [8 run, 0 error, 1.8 min]
+  null_rep__S2__N300__r4__b75 ok 74s  [9 run, 0 error, 1.9 min]
+  null_rep__S2__N300__r4__b80 ok 54s  [10 run, 0 error, 2.5 min]
+  null_rep__S2__N300__r4__b83 ok 37s  [11 run, 0 error, 2.5 min]
+  null_rep__S2__N300__r4__b81 ok 53s  [12 run, 0 error, 2.7 min]
+  null_rep__S2__N300__r4__b82 ok 66s  [13 run, 0 error, 2.9 min]
+  null_rep__S2__N300__r4__b86 ok 31s  [14 run, 0 error, 3.2 min]
+  null_rep__S2__N300__r4__b84 ok 39s  [15 run, 0 error, 3.2 min]
+  null_rep__S2__N300__r4__b85 ok 39s  [16 run, 0 error, 3.2 min]
+  null_rep__S2__N300__r4__b87 ok 41s  [17 run, 0 error, 3.6 min]
+  null_rep__S2__N300__r4__b89 ok 33s  [18 run, 0 error, 3.7 min]
+  null_rep__S2__N300__r4__b90 ok 38s  [19 run, 0 error, 3.8 min]
+  null_rep__S2__N300__r4__b88 ok 40s  [20 run, 0 error, 3.8 min]
+  null_rep__S2__N300__r4__b92 ok 34s  [21 run, 0 error, 4.3 min]
+  null_rep__S2__N300__r4__b91 ok 46s  [22 run, 0 error, 4.3 min]
