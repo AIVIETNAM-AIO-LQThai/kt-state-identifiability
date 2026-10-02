@@ -8,6 +8,11 @@ identifies fatigue, stress, mood, attention or emotion, and nothing uses real le
 Documents: `docs/experiment_01_plan.md` (approved plan), `docs/experiment_01_decisions.md` (decision log),
 `docs/experiment_01_handoff.md` (model handoffs), `docs/experiment_01_smoke_report.md` (Stage 1 evidence).
 
+**Status: complete.** Final interpretation in `docs/experiment_01_final_report.md`. In short: under the simulated
+assumptions, σ²_F was recovered without material bias at N = 300 and 1000. The boundary-aware test detected it in 20/20
+datasets and produced no false positives in 40 null datasets. Recovery was partly robust to misspecified gains (13–15 %
+attenuation). τ_F was only weakly determined. Confirmatory results: `results/experiment_01/confirmatory/1b1307a48a/`.
+
 ## Environment
 
 Original local setup: `python -m pip install -r bootstrap-requirements.txt` (Windows, `.venv12`, Python 3.12).

@@ -4,6 +4,26 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H6: final interpretation complete; Experiment 1 closed (2026-10-02)
+
+```text
+MODEL HANDOFF — Experiment 1 complete (no further model work pending)
+Completed: Opus final interpretation of the Stage 3 confirmatory results (user's local run, commit 97d67a9;
+  results/experiment_01/confirmatory/1b1307a48a). 4,930/4,930 jobs ok, 0 errors. Provenance adjudicated (D29: the code hash
+  differs only by CRLF line endings, reproduced exactly; dirty flag from untracked files), one certificate flag immaterial
+  (D30), S8 nuisance reference note (D31). Verdict D32: H1 supported for sigma2_F under the simulated assumptions
+  (PH1 pass, PH2 20/20, PH3/PH4 0/20 each, PH5 inconclusive/pass with 13-15 % attenuation, PH6 improvement / no spurious
+  superiority); tau_F weakly determined. Report: docs/experiment_01_final_report.md.
+Next task: none. Any extension (MDE power, S7-type processes, unknown difficulties, real data) needs a new approved protocol.
+Target: none (user decides).
+Reason: Experiment 1 scope is exhausted; the confirmatory evidence has been interpreted.
+Switch: none.
+Approval: no code, config or result was changed in H6; docs only.
+Resume action: none.
+```
+
+---
+
 ## MODEL HANDOFF — H5b: cloud attempt stopped → user runs Stage 3 locally from scratch (2026-10-01)
 
 ```text

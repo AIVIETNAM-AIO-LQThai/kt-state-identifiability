@@ -1,6 +1,6 @@
 # Experiment 1 — Shared transient latent state `F`: synthetic identifiability & recovery
 
-**Status:** approved by the user on 2026-09-30 (plan-mode approval, including kernel, S6/S7/S8/S8n constructions, Stage 1 and the bounded Stage 2 budget). Stage 3 is **not** approved.
+**Status:** approved by the user on 2026-09-30 (plan-mode approval, including kernel, S6/S7/S8/S8n constructions, Stage 1 and the bounded Stage 2 budget). Stage 3 approved 2026-09-30 (addendum H3), run locally and interpreted 2026-10-02 (addendum H6). **Experiment 1 is complete**; see `docs/experiment_01_final_report.md`.
 
 ## Context
 
@@ -421,3 +421,24 @@ Your local numpy 2.5.3 / scipy 1.18.1 differ from the container's 2.4.6 / 1.17.1
 - H5: after your local run, you switch to Opus in Plan Mode for the final interpretation.
 
 **Status: Stage 3 protocol APPROVED by the user on 2026-09-30 (plan approval). Frozen config not yet written.**
+
+---
+
+## Addendum — H6 OPUS FINAL INTERPRETATION OF STAGE 3 (2026-10-02)
+
+Input: the user's local confirmatory run (commit `97d67a9`, `results/experiment_01/confirmatory/1b1307a48a/`), with 4,930/4,930 jobs ok and 0 errors.
+
+**Provenance (D29–D31).**
+- The code-hash difference is reproduced exactly as CRLF line endings of the frozen `kt_trial/*.py`, so the code is unchanged.
+- The dirty flag comes from untracked files.
+- One immaterial certificate flag (S8n N=1000 rep 13).
+- The nuisance gain-variance references in S8/S8n were corrected in the report only.
+
+**Verdict (D32).** H1 is supported for σ²_F under the simulated assumptions; τ_F is weakly determined.
+- **PH1:** pass at N=300 and N=1000.
+- **PH2:** 20/20 rejections.
+- **PH3/PH4:** no evidence of excess false positives (0/20 each, CP upper 0.17).
+- **PH5:** inconclusive at N=300 and pass at N=1000, with a systematic 13–15 % attenuation.
+- **PH6:** held-out improvement in S1 and no spurious superiority in S2/S8n.
+
+Claims, limitations L1–L10, deviations and recommendations are in `docs/experiment_01_final_report.md`. No code, config or result was changed.
