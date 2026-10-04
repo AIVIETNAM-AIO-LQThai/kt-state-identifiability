@@ -40,6 +40,9 @@ def main(argv=None) -> int:
         from kt_trial.config import load_yaml
         from .regenerate import exp1_stage_cfg, fingerprint
         c2 = load_yaml(args.config); s1 = exp1_stage_cfg(c2["exp1"]["stage_config"]); res = []
+        from .envguard import EXIT_ENV_MISMATCH, require_exact_environment
+        if not require_exact_environment(c2["exp1"]["results"]):
+            return EXIT_ENV_MISMATCH
         for d in args.dataset:
             sid, N, rep = d.split(":")
             x = fingerprint(s1, c2["exp1"]["results"], sid, int(N), int(rep)); res.append(x)
@@ -64,7 +67,11 @@ def main(argv=None) -> int:
     if args.cmd == "addendum-summarize":
         from .addendum import summarize_cli
         return summarize_cli(args.config)
+    from kt_trial.config import load_yaml
     from .addendum import run_cli
+    from .envguard import EXIT_ENV_MISMATCH, require_exact_environment
+    if not require_exact_environment(load_yaml(args.config)["exp1"]["results"]):
+        return EXIT_ENV_MISMATCH
     return run_cli(args.config, args.workers, args.limit, args.tiers.split(",") if args.tiers else None)
 
 

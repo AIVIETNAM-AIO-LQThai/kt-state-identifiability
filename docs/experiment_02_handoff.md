@@ -4,6 +4,21 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H14: guards implemented; owner runs addendum run 2 on the PC (2026-10-04)
+
+```text
+MODEL HANDOFF — no model task until the owner pushes run 2
+Completed (Sonnet 5.5): X2-D18 — envguard (exit 6 unless python 3.12.10 / numpy 2.5.3 / scipy 1.18.1; verified refusing in the container),
+  interpreter+version record in every per-dataset result and the summary, per-dataset outputs in <out_dir>/per_dataset/ (not ignored),
+  configs/experiment_01_addendum/addendum_run2.yaml (sha256 2714bca1...34af), two new tests, full pytest 86 passed,
+  docs/experiment_02_pc_instructions.md rewritten (explicit .venv12 interpreter, force-add of run 1's hidden files, run-2 commands).
+Pending (owner, PC, ~2 CPU-h): follow docs/experiment_02_pc_instructions.md; push results/experiment_01_addendum/run2 (+ run 1's per-dataset files).
+Next task (Opus 5.5, Plan Mode): interpret run 2 (and report run 1 as a documented environment mismatch); write docs/experiment_01_addendum_numerical.md.
+Resume: `Switched to Opus; interpret addendum`.
+```
+
+---
+
 ## MODEL HANDOFF — H13: addendum run 1 used the wrong interpreter -> Sonnet adds guards; owner reruns in .venv12 (2026-10-04)
 
 ```text

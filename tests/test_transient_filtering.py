@@ -339,3 +339,27 @@ def test_addendum_summary_interprets_only_reproduced(tmp_path):
     S = json.loads((tmp_path / "out" / "summary.json").read_text())
     assert S["n_reproduced"] == 1 and S["n_not_reproduced"] == 1 and len(S["interpreted"]) == 1 and len(S["provenance_failures"]) == 1
     assert "Provenance failure" in (tmp_path / "out" / "summary.md").read_text()
+
+
+# ---------------------------------------------------------------- exact-environment guard and addendum output location
+@pytest.mark.skipif(not EXP1.exists(), reason="Experiment-1 results not present")
+def test_env_guard_refuses_other_builds_and_accepts_exact(monkeypatch):
+    from transient_filtering import envguard
+    msgs = []
+    exp = envguard.expected_env(str(EXP1))
+    assert exp["numpy"] == "2.5.3" and exp["scipy"] == "1.18.1"
+    monkeypatch.setattr(envguard, "live_env", lambda: {"executable": "x", **{**exp, "numpy": "2.5.1"}})
+    assert not envguard.require_exact_environment(str(EXP1), out=msgs.append) and any("numpy" in m and "2.5.1" in m for m in msgs)
+    monkeypatch.setattr(envguard, "live_env", lambda: {"executable": "x", **exp})
+    assert envguard.require_exact_environment(str(EXP1), out=lambda m: None)
+    assert envguard.env_mismatches(exp, {**exp, "scipy": "1.0"}) == [f"scipy: Experiment 1 used {exp['scipy']}, this interpreter has 1.0"]
+
+
+def test_addendum_worker_writes_per_dataset_with_environment(tmp_path, monkeypatch):
+    import json
+    from transient_filtering import addendum
+    monkeypatch.setattr(addendum, "check_dataset", lambda item, cfg: {"item": item, "runtime": 1.0})
+    jid, st, _ = addendum._worker(({"job_id": "j1", "scenario": "S1", "N": 300, "rep": 0, "kind": "null"}, {}, str(tmp_path)))
+    f = tmp_path / "per_dataset" / "j1.json"
+    r = json.loads(f.read_text())
+    assert st == "ok" and r["env"]["numpy"] and r["env"]["executable"] and not (tmp_path / "datasets").exists()

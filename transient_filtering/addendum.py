@@ -8,6 +8,7 @@ p-value. A finite profile search gives an attained improvement, not a global bou
 from __future__ import annotations
 
 import glob
+import json
 import os
 import time
 import traceback
@@ -25,6 +26,8 @@ from kt_trial.moments import Theta
 from kt_trial.runner import read_json, scenario_cfg, write_json_atomic
 from kt_trial.schedule import build_templates
 from kt_trial.simulator import simulate
+
+from .envguard import live_env
 
 CELLS = [("S2", 300), ("S2", 1000), ("S8n", 300), ("S8n", 1000)]
 
@@ -244,10 +247,11 @@ def _worker(args):
     for v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
         os.environ[v] = "1"
     item, cfg, out_dir = args
-    p = Path(out_dir) / "datasets" / (item["job_id"] + ".json")
+    p = Path(out_dir) / "per_dataset" / (item["job_id"] + ".json")
     try:
         res = check_dataset(item, cfg)
         res["status"] = "ok"
+        res["env"] = live_env()
     except Exception as e:
         res = {"item": item, "status": "error", "error": repr(e), "trace": traceback.format_exc(limit=5)}
     write_json_atomic(p, res)
@@ -264,8 +268,8 @@ def run_cli(config_path: str, workers: int, limit: int | None, tiers: list[str] 
     items = [x for x in sel["selected"] if (tiers is None or x["tier"] in tiers)]
     if limit:
         items = items[:limit]
-    todo = [x for x in items if not (out_dir / "datasets" / (x["job_id"] + ".json")).exists()
-            or read_json(out_dir / "datasets" / (x["job_id"] + ".json")).get("status") != "ok"]
+    todo = [x for x in items if not (out_dir / "per_dataset" / (x["job_id"] + ".json")).exists()
+            or read_json(out_dir / "per_dataset" / (x["job_id"] + ".json")).get("status") != "ok"]
     print(f"{len(items)} datasets selected for this call, {len(todo)} to run ({len(items) - len(todo)} already done)")
     t0 = time.time()
     with ProcessPoolExecutor(max_workers=workers) as ex:
@@ -281,7 +285,7 @@ def summarize_cli(config_path: str) -> int:
     cfg = load_yaml(config_path)
     out_dir = Path(cfg["out_dir"])
     rows, bad = [], []
-    for f in sorted(glob.glob(str(out_dir / "datasets" / "*.json"))):
+    for f in sorted(glob.glob(str(out_dir / "per_dataset" / "*.json")) + glob.glob(str(out_dir / "datasets" / "*.json"))):
         r = read_json(Path(f))
         if r.get("status") != "ok":
             bad.append({"job_id": r["item"]["job_id"], "status": "error", "error": r.get("error")}); continue
@@ -305,7 +309,8 @@ def summarize_cli(config_path: str) -> int:
                "interpreted": [line(r) for r in repro],
                "provenance_failures": [{"job_id": r["item"]["job_id"], "clr_recomputed": r["clr_recomputed"],
                                         "registered_clr": (r["item"].get("saved") or {}).get("clr")} for r in fail],
-               "errors": bad}
+               "errors": bad,
+               "environments": sorted({json.dumps(r.get("env", "not recorded"), sort_keys=True) for r in rows})}
     tiers = {}
     for x in summary["interpreted"]:
         t = tiers.setdefault(x["tier"], {"n": 0, "max_attained_B2": 0.0, "p_changed": 0})
@@ -315,6 +320,7 @@ def summarize_cli(config_path: str) -> int:
     summary["by_tier"] = tiers
     write_json_atomic(out_dir / "summary.json", summary)
     L = ["# Experiment 1 numerical addendum: summary", "",
+         f"- environments recorded in the per-dataset results: {summary['environments']}",
          f"- datasets {len(rows)}; reproduced the registered result {len(repro)}; NOT reproduced {len(fail)} (provenance failures, not interpreted); errors {len(bad)}", ""]
     if fail:
         L += ["**Provenance failure**: the regenerated dataset does not reproduce the registered CLR for "
