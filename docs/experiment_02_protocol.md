@@ -1,6 +1,6 @@
 # Experiment 2: protocol discussion and approved plan (Opus H7, 2026-10-04)
 
-**Status:** approved by the owner on 2026-10-04 (plan approval). This document is the source specification for H8 (Sonnet implementation). The Experiment 2 config is **not** frozen, and no confirmatory evaluation is authorized until H9.
+**Status:** approved by the owner on 2026-10-04 (plan approval). This document is the source specification for H8 (Sonnet implementation). Work happens on branch `exp/transient-state-filtering`; the code lives in the package `transient_filtering/` (named for its purpose, at the owner's request). The Experiment 2 config is **not** frozen, and no confirmatory evaluation is authorized until H9.
 
 **Session and scope.**
 - Opus 5.5 (`get_session`: configured and last served `claude-opus-5-5`), High effort, Plan Mode, read-only.
@@ -258,7 +258,7 @@ I agree that individual tracking under the Experiment 1 process is the right nex
 | 6 | Prespecified rules | **R1** reference gate (below); **R2** ADF-approximation statement; **R3** null safety (below); everything else continuous and descriptive | see below |
 | 7 | Exp-1 numerical addendum | 53 datasets, about 3–4.5 CPU-h, run alongside Experiment 2 | Tier A settles the only verdict-relevant question |
 | 8 | Compute and venue | cap of **12 CPU-h** in total (Experiment 2 about 1–3 CPU-h plus the addendum), benchmarks first; owner's PC | bitwise regeneration requires the run environment |
-| 9 | Code placement | a new package `kt_exp2/`; `kt_trial/` is untouched, imported only | `code_hash()` hashes `kt_trial/*.py`, so new files there would break Experiment 1's provenance check |
+| 9 | Code placement | a new package `transient_filtering/`; `kt_trial/` is untouched, imported only | `code_hash()` hashes `kt_trial/*.py`, so new files there would break Experiment 1's provenance check |
 | 10 | Order after Experiment 2 | Experiment 3 = unknown b with item misfit; then within-session drift | the main threats to the population claim |
 
 **R1 (reference gate).** The reference passes if, on the validation subset:
@@ -281,13 +281,13 @@ I agree that individual tracking under the Experiment 1 process is the right nex
 ## 9. Handoffs and provisional implementation plan
 - **H8 → Sonnet 5.5 (Medium; High for the ADF, SMC and bound).** Manual switch by the owner.
   1. Write `docs/experiment_02_plan.md`, `experiment_02_decisions.md` and `experiment_02_handoff.md` from this addendum.
-  2. Build `kt_exp2/`:
+  2. Build `transient_filtering/`:
      - `regenerate.py` (regeneration plus fingerprints, using `kt_trial.simulator.simulate` and `kt_trial.composite_likelihood`);
      - `adf.py` (B2, B1, priorF, white, F0, oracle-F and indicator filters);
      - `reference.py` (RB-SMC);
      - `bound.py` (covariance-form BCRB plus a direct J_ξ inversion as a cross-check);
      - `addendum.py` (§7);
-     - `runner.py` (deterministic job ids, atomic writes, resume, dry-run, LF-normalized code hash of `kt_trial` and `kt_exp2`, environment manifest);
+     - `runner.py` (deterministic job ids, atomic writes, resume, dry-run, LF-normalized code hash of `kt_trial` and `transient_filtering`, environment manifest);
      - `summarize.py`.
   3. Write focused tests:
      - the one-step probit moments against 2-D quadrature;

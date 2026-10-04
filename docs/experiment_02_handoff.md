@@ -18,10 +18,12 @@ Question: under the Exp-1 process with known b, the MMSE-recoverable fraction of
   null safety (S2, S8n), and ideal pre-answer indicators (rho 0.3/0.6, oracle-F); S8 ADF-only descriptive.
 Equations: protocol §4 (covariance-form BCRB with surrogate noise 1/Ibar_t, innovation parameterisation), §5 (ADF probit update,
   OU propagation and reset, B2-priorF, B2-white, B2-F0, oracle-F, indicator arms, RB-SMC reference).
+Branch: exp/transient-state-filtering (created from f2cf8fe; owner-requested purpose name). Experiment 1 stays frozen on
+  exp/transient-state-recoverability. Package: transient_filtering/ (owner asked for a purpose name instead of kt_exp2).
 Next task (Sonnet 5.5; Medium, High for adf/reference/bound):
   1. docs/experiment_02_plan.md, experiment_02_decisions.md (record approved decisions 1-10, R1-R3) from the protocol.
-  2. New package kt_exp2/ (regenerate, adf, reference, bound, addendum, runner, summarize). Do NOT modify kt_trial/ (its code hash
-     is part of the Exp-1 freeze); the manifest records an LF-normalised hash of kt_trial and kt_exp2.
+  2. New package transient_filtering/ (regenerate, adf, reference, bound, addendum, runner, summarize). Do NOT modify kt_trial/ (its code hash
+     is part of the Exp-1 freeze); the manifest records an LF-normalised hash of kt_trial and transient_filtering.
   3. Focused tests per protocol §9; full pytest must pass.
   4. Bounded pilot (pre-approved, <= 0.5 CPU-h): fingerprint check on 4 datasets (report whether the container reproduces the
      owner-run data; if not, regeneration moves to the owner's PC), R1 reference gate on 20 learners, benchmarks for the
