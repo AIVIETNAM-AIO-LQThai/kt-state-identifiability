@@ -1,0 +1,16 @@
+﻿# Experiment 1 numerical-validation ADDENDUM, RUN 3: identical to addendum_run2.yaml except out_dir; launched with OPENBLAS/OMP/MKL_NUM_THREADS=1 set before Python starts (single-thread BLAS reproduces the registered fits bit for bit).
+# Targeted validation of the saved near-null certificate warnings; NOT a new estimate of warning prevalence or test size.
+exp1:
+  stage_config: configs/experiment_01/stage_confirmatory.yaml
+  results: results/experiment_01/confirmatory/1b1307a48a
+out_dir: results/experiment_01_addendum/run3
+master_seed: 20261501          # namespace for the profile-start jitter only (data seeds are Experiment 1's)
+warning_flags: [newton_decrement_large, hessian_not_pd]
+selection:
+  tier_A: {scenarios: [S1, S8]}                 # every warned replicate: the only ones that can bear on a registered verdict
+  tier_B: {scenarios: [S2, S8n], top_clr: 5, nonpd: 5, near_null_unwarned: 5, large_sigma_unwarned: 5, near_null_max_sigma2F: 0.02}
+  tier_C: [{scenario: S8n, N: 1000, rep: 13}]   # the one main B2 fit that missed the decrement tolerance
+tau_profile: {n: 11, lo: 0.05, hi: 1000.0, n_starts: 2, jitter_sd: 0.15}
+hessian_steps: [1.0e-4, 1.0e-5, 1.0e-6]
+b1_extra_starts: 2
+repro_tolerance: {clr_abs: 1.0e-6, sigma2_F_abs: 1.0e-9}

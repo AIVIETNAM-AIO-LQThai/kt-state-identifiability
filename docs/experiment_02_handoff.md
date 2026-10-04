@@ -4,6 +4,22 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H15: Experiment-1 addendum complete; Experiments 1 and 2 closed (2026-10-05)
+
+```text
+MODEL HANDOFF — no pending model task
+Completed (Opus, on the owner's PC): addendum run 2 (.venv12, exact versions) reproduced 2/53, bitwise equal to run 1 -> the H13 numpy
+  diagnosis was wrong. Root cause X2-F15: multithreaded BLAS (transient_filtering/cli.py lacks kt_trial/cli.py's import-time
+  *_NUM_THREADS=1). Run 3 (single-thread BLAS set before launch; configs/experiment_01_addendum/addendum_run3.yaml) reproduced 53/53 exactly.
+  Result: warnings mark slightly under-optimised B2 null fits along the flat tau_F direction (max attained gain 0.12 log-lik; unwarned
+  controls 0); B1 exact; 0/52 p-values change; no registered verdict changes; decrement < attained gain in 13/26 (errata E3 confirmed).
+  Written: docs/experiment_01_addendum_numerical.md; X2-F15, X2-D19.
+Open (optional, Sonnet): set *_NUM_THREADS=1 at import in transient_filtering/cli.py (bitwise re-execution of Experiment 2 needs it).
+Next research step: Experiment 3 (unknown item difficulties with item misfit) needs a new Opus protocol discussion.
+```
+
+---
+
 ## MODEL HANDOFF — H14: guards implemented; owner runs addendum run 2 on the PC (2026-10-04)
 
 ```text
