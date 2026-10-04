@@ -242,9 +242,11 @@ def test_regeneration_build_independent_quantities_match_saved():
 # ---------------------------------------------------------------- runner
 def _tiny_cfg(tmp_path):
     cfg = load_yaml("configs/experiment_02/stage_pilot.yaml")
-    cfg["track"]["datasets"] = [{"scenarios": ["S1"], "N_list": [300], "rep_range": [0, 1]}]
+    cfg["track"]["datasets"] = [{"scenarios": ["S1"], "N_list": [300], "rep_range": [0, 2]}]
     cfg["heldout_N"] = 40
     cfg["ref"].update(rep_range=[0, 1], per_template=1, n_seeds=3, n_particles=256, doubling_factor=2, n_seeds_b1=2)
+    cfg["ref_prod"] = dict(scenario="S1", N=1000, rep_range=[0, 1], n_particles=256, n_learners=40)
+    cfg["sensitivity_exclude"] = [dict(scenario="S1", N=300, rep=0)]
     import yaml
     p = tmp_path / "tiny.yaml"; p.write_text(yaml.safe_dump(cfg)); return p
 
@@ -256,7 +258,7 @@ def test_runner_dry_run_resume_refusal_and_summary(tmp_path):
     assert runner.run_stage(cfgp, results_root=str(root), dry_run=True, out=msgs.append) == 0 and not root.exists()
     assert runner.run_stage(cfgp, results_root=str(root), workers=1, out=msgs.append) == 0
     rd = next((root / "pilot").iterdir())
-    assert len(list((rd / "jobs").glob("*.json"))) == 3 and not list((rd / "jobs").glob("*.tmp"))
+    assert len(list((rd / "jobs").glob("*.json"))) == 5 and not list((rd / "jobs").glob("*.tmp"))
     msgs.clear()
     assert runner.run_stage(cfgp, results_root=str(root), workers=1, out=msgs.append) == 0
     assert any("0 jobs to run" in m for m in msgs)                        # resume: nothing re-run
@@ -267,6 +269,10 @@ def test_runner_dry_run_resume_refusal_and_summary(tmp_path):
     from transient_filtering.summarize import summarize
     S = summarize(str(rd))
     assert S["accounting"]["errors"] == 0 and "S1|N=300" in S["cells"] and S["reference"]["n_learners"] == 8
+    assert S["production_reference"]["n_learners"] == 40 and "R0" in S["production_reference"] and S["production_reference"]["provenance_hashes"] == 1
+    assert S["provenance"]["jobs_with_hashes"] == 4 and len(S["provenance"]["numpy"]) == 1       # track x2, ref, ref_prod
+    sens = S["cells"]["S1|N=300"]["sensitivity"]
+    assert sens["excluded"] == [0] and sens["n_reps_kept"] == 1
     assert (rd / "summary.md").exists()
 
 
@@ -284,3 +290,52 @@ def test_code_hash_is_line_ending_invariant(tmp_path, monkeypatch):
     from transient_filtering import runner
     h = runner.code_hash()
     assert len(h) == 64 and h == runner.code_hash()
+
+
+# ---------------------------------------------------------------- production summary rules (R0 gate, R2), addendum summary
+def _fake_prod(ref_r2, bound_r2=0.12, adf_r2=0.095, n_reps=3, s2=0.16):
+    from transient_filtering.summarize import BIN_REPORT
+    sm = lambda mean, var=4e-4: {"n": 300, "mean": mean, "var": var}
+    mse = lambda r2: {b: sm((1 - r2) * s2) for b in BIN_REPORT}
+    diff = lambda d: {b: sm(d * s2) for b in BIN_REPORT}
+    gain = {b: sm(1e-4, 1e-8) for b in BIN_REPORT}
+    out = []
+    for r in range(n_reps):
+        out.append({"sigma2_F": s2, "n_learners": 300, "n_particles": 1024, "ess_min": 500.0, "provenance": {"eval_sha256": f"h{r}"},
+                    "bound_mse": {ph: {b: (1 - bound_r2) * s2 for b in BIN_REPORT} for ph in ("pre", "post")},
+                    "mse": {"ref": {ph: mse(ref_r2) for ph in ("pre", "post")}, "adf_known": {ph: mse(adf_r2) for ph in ("pre", "post")},
+                            "adf_fit": {ph: mse(adf_r2 - 0.005) for ph in ("pre", "post")}},
+                    "mse_diff": {"adf_known_minus_ref": {ph: diff(ref_r2 - adf_r2) for ph in ("pre", "post")},
+                                 "adf_fit_minus_adf_known": {ph: diff(0.005) for ph in ("pre", "post")}},
+                    "gain": {"ref__over__adf_known": gain, "adf_known__over__adf_fit": gain, "adf_fit__over__B1_fit": gain},
+                    "dp_abs": {"adf_known": {b: 0.003 for b in BIN_REPORT}, "adf_fit": {b: 0.004 for b in BIN_REPORT}}})
+    return out
+
+
+def test_r0_gate_passes_below_bound_and_fails_above():
+    from transient_filtering.summarize import _production
+    ok = _production(_fake_prod(ref_r2=0.10), {})
+    assert ok["R0"]["passed"] and ok["R2"]["mean_abs_dp_le_0.005"] and ok["R2"]["logloss_gain_ci_within_pm_5e-4"]
+    assert abs(ok["gap"]["post"]["practice"]["approximation_loss_ref_minus_adf_known"]["mean"] - 0.005) < 1e-9
+    bad = _production(_fake_prod(ref_r2=0.14), {})                    # reference above the information bound
+    assert not bad["R0"]["passed"]
+    assert not _production(_fake_prod(ref_r2=0.10, adf_r2=0.14), {})["R0"]["passed"]
+
+
+def test_addendum_summary_interprets_only_reproduced(tmp_path):
+    import json, yaml
+    from transient_filtering.addendum import summarize_cli
+    d = tmp_path / "out" / "datasets"; d.mkdir(parents=True)
+    def rec(jid, repro, tier="A"):
+        return {"status": "ok", "item": {"job_id": jid, "tier": tier, "why": "x", "saved": {"clr": 400.0}},
+                "reproduces_registered": repro, "clr_recomputed": 400.0 if repro else 0.5, "sigma2_F": 0.01, "tau_F": 3.0,
+                "flags_B2": ["newton_decrement_large"], "kkt": {"projected_gradient_inf": 0.01, "boundary_hits": []},
+                "hessian": [{"step": 1e-5, "min_eig": 0.5, "hessian_not_pd": False, "newton_decrement": 1e-4}],
+                "attained_improvement_B2": 0.002, "attained_improvement_B1": 0.0, "clr_with_improved_fits": 400.004,
+                "tau_profile": [{"tau_F": 3.0, "ll": -10.0}], "p_effect": {"p_registered": 0.05, "p_with_improved_fit": 0.05}}
+    (d / "a.json").write_text(json.dumps(rec("a", True))); (d / "b.json").write_text(json.dumps(rec("b", False)))
+    c = tmp_path / "add.yaml"; c.write_text(yaml.safe_dump({"out_dir": str(tmp_path / "out")}))
+    assert summarize_cli(str(c)) == 0
+    S = json.loads((tmp_path / "out" / "summary.json").read_text())
+    assert S["n_reproduced"] == 1 and S["n_not_reproduced"] == 1 and len(S["interpreted"]) == 1 and len(S["provenance_failures"]) == 1
+    assert "Provenance failure" in (tmp_path / "out" / "summary.md").read_text()

@@ -272,3 +272,65 @@ def run_cli(config_path: str, workers: int, limit: int | None, tiers: list[str] 
         for jid, st, rt in ex.map(_worker, [(x, cfg, str(out_dir)) for x in todo]):
             print(f"  {jid} {st} {rt:.0f}s [{(time.time() - t0) / 60:.1f} min]", flush=True)
     return 0
+
+
+# ---------------------------------------------------------------------------------------------- addendum summary
+def summarize_cli(config_path: str) -> int:
+    """Aggregate the per-dataset checks. Only datasets whose registered result was reproduced are interpreted; the rest are
+    listed as provenance failures (the regeneration environment differs from the one that produced the registered data)."""
+    cfg = load_yaml(config_path)
+    out_dir = Path(cfg["out_dir"])
+    rows, bad = [], []
+    for f in sorted(glob.glob(str(out_dir / "datasets" / "*.json"))):
+        r = read_json(Path(f))
+        if r.get("status") != "ok":
+            bad.append({"job_id": r["item"]["job_id"], "status": "error", "error": r.get("error")}); continue
+        rows.append(r)
+    repro = [r for r in rows if r["reproduces_registered"]]
+    fail = [r for r in rows if not r["reproduces_registered"]]
+    def line(r):
+        pe = r.get("p_effect") or {}
+        h = r["hessian"]
+        return {"job_id": r["item"]["job_id"], "tier": r["item"]["tier"], "why": r["item"]["why"],
+                "registered": r["item"].get("saved"), "clr_recomputed": r["clr_recomputed"], "sigma2_F": r["sigma2_F"], "tau_F": r["tau_F"],
+                "flags_B2": r["flags_B2"], "kkt_projected_gradient_inf": r["kkt"]["projected_gradient_inf"],
+                "boundary_hits": r["kkt"]["boundary_hits"],
+                "hessian_min_eig_by_step": {str(x["step"]): x["min_eig"] for x in h},
+                "hessian_not_pd_by_step": {str(x["step"]): x["hessian_not_pd"] for x in h},
+                "newton_decrement_by_step": {str(x["step"]): x["newton_decrement"] for x in h},
+                "attained_improvement_B2": r["attained_improvement_B2"], "attained_improvement_B1": r["attained_improvement_B1"],
+                "clr_with_improved_fits": r["clr_with_improved_fits"], "p_effect": pe,
+                "profile_best_tau": max((x for x in r["tau_profile"] if x["ll"] is not None), key=lambda x: x["ll"], default={}).get("tau_F")}
+    summary = {"n_datasets": len(rows), "n_errors": len(bad), "n_reproduced": len(repro), "n_not_reproduced": len(fail),
+               "interpreted": [line(r) for r in repro],
+               "provenance_failures": [{"job_id": r["item"]["job_id"], "clr_recomputed": r["clr_recomputed"],
+                                        "registered_clr": (r["item"].get("saved") or {}).get("clr")} for r in fail],
+               "errors": bad}
+    tiers = {}
+    for x in summary["interpreted"]:
+        t = tiers.setdefault(x["tier"], {"n": 0, "max_attained_B2": 0.0, "p_changed": 0})
+        t["n"] += 1; t["max_attained_B2"] = max(t["max_attained_B2"], x["attained_improvement_B2"])
+        pe = x["p_effect"]
+        t["p_changed"] += int(bool(pe) and pe["p_registered"] != pe["p_with_improved_fit"])
+    summary["by_tier"] = tiers
+    write_json_atomic(out_dir / "summary.json", summary)
+    L = ["# Experiment 1 numerical addendum: summary", "",
+         f"- datasets {len(rows)}; reproduced the registered result {len(repro)}; NOT reproduced {len(fail)} (provenance failures, not interpreted); errors {len(bad)}", ""]
+    if fail:
+        L += ["**Provenance failure**: the regenerated dataset does not reproduce the registered CLR for "
+              f"{len(fail)} dataset(s); these are not evidence about the registered fits. First: {summary['provenance_failures'][0]}", ""]
+    L += [f"- by tier (reproduced datasets only): {tiers}", "",
+          "| tier | dataset | registered CLR | B2 flags | KKT inf-norm | min Hessian eig (steps) | attained B2 gain | attained B1 gain | p registered -> with improved fits |",
+          "|---|---|---|---|---|---|---|---|---|"]
+    for x in summary["interpreted"]:
+        pe = x["p_effect"]
+        L.append(f"| {x['tier']} | {x['job_id']} | {_fmt((x['registered'] or {}).get('clr'))} | {x['flags_B2']} | {_fmt(x['kkt_projected_gradient_inf'])} | "
+                 f"{x['hessian_min_eig_by_step']} | {_fmt(x['attained_improvement_B2'])} | {_fmt(x['attained_improvement_B1'])} | "
+                 f"{_fmt(pe.get('p_registered'))} -> {_fmt(pe.get('p_with_improved_fit'))} |")
+    (out_dir / "summary.md").write_text("\n".join(L) + "\n", encoding="utf-8")
+    print(f"wrote {out_dir / 'summary.json'} ({len(repro)} interpreted, {len(fail)} provenance failures, {len(bad)} errors)")
+    return 0
+
+
+def _fmt(x):
+    return "NA" if x is None else (f"{x:.4g}" if isinstance(x, float) else str(x))

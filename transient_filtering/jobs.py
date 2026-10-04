@@ -6,9 +6,13 @@ Evaluation data are held-out learners (never used for fitting): either the regen
 """
 from __future__ import annotations
 
-import numpy as np
+import hashlib
+from pathlib import Path
 
-from kt_trial.config import rng_for
+import numpy as np
+import scipy
+
+from kt_trial.config import file_sha256, rng_for
 from kt_trial.moments import Theta
 from kt_trial.runner import scenario_cfg
 from kt_trial.schedule import build_templates
@@ -47,6 +51,13 @@ def _assemble(ds, ts, fn):
     return out
 
 
+def _prov(cfg2: dict, ds, sid: str, N: int, rep: int) -> dict:
+    """Hashes that identify exactly which evaluation data and which frozen Experiment-1 fit a result used."""
+    f = Path(cfg2["exp1"]["results"]) / "jobs" / f"fit__{sid}__N{N}__r{rep}.json"
+    return {"eval_sha256": hashlib.sha256(ds.Y.tobytes() + ds.template_id.tobytes()).hexdigest(),
+            "exp1_fit_sha256": file_sha256(f), "numpy": np.__version__, "scipy": scipy.__version__}
+
+
 def run_bound(cfg2: dict) -> dict:
     s1 = exp1_stage_cfg(cfg2["exp1"]["stage_config"])
     cfg = scenario_cfg(s1, cfg2["bound"]["scenario"])
@@ -77,7 +88,7 @@ def _arm_logloss(arms: dict, Y, masks) -> dict:
 PAIRS = [  # (X, Y): gain of arm X over arm Y in nats per response
     ("full_fit", "priorF_fit"), ("full_fit", "B1_fit"), ("full_fit", "F0_fit"), ("full_fit", "white_fit"),
     ("oracle_fit", "full_fit"), ("full_known", "priorF_known"), ("full_known", "F0_known"), ("oracle_known", "full_known"),
-    ("full_known", "full_fit"), ("ind_full_rho0.3", "full_known"), ("ind_full_rho0.6", "full_known"),
+    ("full_known", "full_fit"), ("priorF_fit", "B1_fit"), ("ind_full_rho0.3", "full_known"), ("ind_full_rho0.6", "full_known"),
     ("ind_full_rho0.3", "ind_only_rho0.3"), ("ind_full_rho0.6", "ind_only_rho0.6"), ("B1_fit", "F0_fit")]
 
 
@@ -131,6 +142,7 @@ def run_track(cfg2: dict, sid: str, N: int, rep: int) -> dict:
         arms.setdefault(a, {})[f] = v
     t_last = int(np.flatnonzero(ts[0].practice)[-1])
     res = {"scenario": sid, "N": N, "rep": rep, "data_source": cfg2["data_source"], "n_eval": int(Y.shape[0]),
+           "provenance": _prov(cfg2, ds, sid, N, rep),
            "sigma2_F_true": s2F, "fitted": {"B2": {k: fit["fits"]["B2"]["theta"][k] for k in ("sigma2_F", "tau_F")},
                                               "flags_B2": fit["fits"]["B2"]["flags"]},
            "logloss": _arm_logloss(arms, Y, masks), "gain": {}, "state": {}, "excursion": {}, "persistent": {}}
@@ -198,6 +210,7 @@ def run_ref(cfg2: dict, rep: int) -> dict:
     def mse_bins(mF):
         return {b: float(((mF - F) ** 2)[:, m].mean()) for b, m in masks.items()}
     res = {"scenario": sid, "N": N, "rep": rep, "data_source": cfg2["data_source"], "n_learners": int(n),
+           "provenance": _prov(cfg2, ds, sid, N, rep),
            "learner_index": sel.tolist(), "template_of_learner": sub_tid.tolist(), "n_seeds": n_seeds, "n_particles": Np, "doubling_factor": rc["doubling_factor"],
            "sigma2_F": s2F,
            "bound_mse_pre": {b: float(bnd_pre[m].mean()) for b, m in masks.items()},
@@ -219,4 +232,45 @@ def run_ref(cfg2: dict, rep: int) -> dict:
                                                   for b, m in masks.items()},
                      "p_seed_sd_rms": float(np.sqrt(np.stack([r["p"] for r in runs1]).var(0, ddof=1).mean())),
                      "gain_ref_over_adf": M.per_bin(M.logloss(adf1["p"], Y) - M.logloss(np.stack([r['p'] for r in runs1]).mean(0), Y), masks)}}
+    return res
+
+
+def run_ref_prod(cfg2: dict, rep: int) -> dict:
+    """Production reference: ALL held-out learners of S1 N=1000 replication `rep`, one SMC pass at the validated particle
+    count, with the ADF arms (known and fitted parameters) and the B1 filter on the very same learners and prefixes."""
+    rc = cfg2["ref_prod"]
+    sid, N = rc["scenario"], rc["N"]
+    cfg, ts, ds = heldout(cfg2, sid, N, rep)
+    fit = load_fit_result(cfg2["exp1"]["results"], sid, N, rep)
+    th1, th2 = Theta.from_dict(fit["fits"]["B1"]["theta"]), Theta.from_dict(fit["fits"]["B2"]["theta"])
+    thT = true_theta(cfg)
+    Y, F = ds.Y.astype(float), ds.latent["F"]
+    masks = M.bin_masks(ts[0])
+    keys = ("p", "mF_pre", "mF_post")
+    adfK = _assemble(ds, ts, lambda g, t, i: {k: v for k, v in run_full(thT, t, Y[i]).items() if k in keys})
+    adfF = _assemble(ds, ts, lambda g, t, i: {k: v for k, v in run_full(th2, t, Y[i]).items() if k in keys})
+    b1 = _assemble(ds, ts, lambda g, t, i: {"p": run_persistent(th1, t, Y[i])["p"]})
+    Np = rc["n_particles"]
+
+    def smc_fn(g, tpl, idx):
+        r = run_smc(thT, tpl, Y[idx], Np, rng_for(cfg2["master_seed"], "smcprod", sid, N, rep, g))
+        return {k: r[k] for k in ("p", "mF_pre", "mF_post", "ess")}
+    ref = _assemble(ds, ts, smc_fn)
+    cnt = np.bincount(ds.template_id, minlength=len(ts)).astype(float)
+    bnd = {ph: sum(c * bcrb_path(thT, ts[g])[ph] for g, c in enumerate(cnt)) / cnt.sum() for ph in ("pre", "post")}
+    e2 = lambda mF: (mF - F) ** 2
+    ll = lambda p: M.logloss(p, Y)
+    res = {"scenario": sid, "N": N, "rep": rep, "data_source": cfg2["data_source"], "n_learners": int(Y.shape[0]),
+           "provenance": _prov(cfg2, ds, sid, N, rep), "n_particles": Np, "sigma2_F": thT.sigma2_F,
+           "bound_mse": {ph: {b: float(bnd[ph][m].mean()) for b, m in masks.items()} for ph in ("pre", "post")},
+           "mse": {a: {ph: M.per_bin(e2(d[f"mF_{ph}"]), masks) for ph in ("pre", "post")}
+                   for a, d in (("ref", ref), ("adf_known", adfK), ("adf_fit", adfF))},
+           "mse_diff": {"adf_known_minus_ref": {ph: M.per_bin(e2(adfK[f"mF_{ph}"]) - e2(ref[f"mF_{ph}"]), masks) for ph in ("pre", "post")},
+                        "adf_fit_minus_adf_known": {ph: M.per_bin(e2(adfF[f"mF_{ph}"]) - e2(adfK[f"mF_{ph}"]), masks) for ph in ("pre", "post")}},
+           "logloss": {a: M.per_bin(ll(d["p"]), masks) for a, d in (("ref", ref), ("adf_known", adfK), ("adf_fit", adfF), ("B1_fit", b1))},
+           "gain": {"ref__over__adf_known": M.per_bin(ll(adfK["p"]) - ll(ref["p"]), masks),
+                    "adf_known__over__adf_fit": M.per_bin(ll(adfF["p"]) - ll(adfK["p"]), masks),
+                    "adf_fit__over__B1_fit": M.per_bin(ll(b1["p"]) - ll(adfF["p"]), masks)},
+           "dp_abs": {a: {b: float(np.abs(d["p"] - ref["p"])[:, m].mean()) for b, m in masks.items()} for a, d in (("adf_known", adfK), ("adf_fit", adfF))},
+           "ess_min": float(ref["ess"].min()), "ess_mean": float(ref["ess"].mean())}
     return res

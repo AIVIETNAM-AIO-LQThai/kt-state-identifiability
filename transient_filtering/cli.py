@@ -25,6 +25,8 @@ def main(argv=None) -> int:
     s.add_argument("--results", required=True)
     a = sub.add_parser("addendum-select")
     a.add_argument("--config", required=True)
+    c = sub.add_parser("addendum-summarize")
+    c.add_argument("--config", required=True)
     b = sub.add_parser("addendum-run")
     b.add_argument("--config", required=True)
     b.add_argument("--workers", type=int, default=1)
@@ -59,6 +61,9 @@ def main(argv=None) -> int:
     if args.cmd == "addendum-select":
         from .addendum import select_cli
         return select_cli(args.config)
+    if args.cmd == "addendum-summarize":
+        from .addendum import summarize_cli
+        return summarize_cli(args.config)
     from .addendum import run_cli
     return run_cli(args.config, args.workers, args.limit, args.tiers.split(",") if args.tiers else None)
 

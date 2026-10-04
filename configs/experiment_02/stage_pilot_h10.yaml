@@ -1,0 +1,20 @@
+# Experiment 2 RE-PILOT after the H9 changes (production reference, provenance, R0). Bounded (<= 0.1 CPU-h); not confirmatory.
+stage: pilot
+master_seed: 20261401
+data_source: fresh
+heldout_N: 300
+exp1:
+  stage_config: configs/experiment_01/stage_confirmatory.yaml
+  results: results/experiment_01/confirmatory/1b1307a48a
+track:
+  datasets:
+    - {scenarios: [S1], N_list: [1000], rep_range: [0, 1]}
+    - {scenarios: [S2, S8n], N_list: [300], rep_range: [0, 1]}
+  known_scenarios: [S1, S2]
+  indicator: {scenarios: [S1], rho: [0.3, 0.6]}
+sensitivity_exclude: [{scenario: S8n, N: 300, rep: 0}]
+bound: {scenario: S1}
+ref: {scenario: S1, N: 1000, rep_range: [0, 1], per_template: 2, n_seeds: 10, n_particles: 32768, doubling_factor: 4, n_seeds_b1: 3}
+ref_prod: {scenario: S1, N: 1000, rep_range: [0, 1], n_particles: 32768, n_learners: 300}
+cost_model_sec: {bound: 1.0, track: 4.0, ref_per_learner_per_kparticle: 0.0165}
+budget: {max_cpu_hours: 0.1, workers: 4, max_wall_minutes: 20}

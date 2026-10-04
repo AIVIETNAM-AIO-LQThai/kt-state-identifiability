@@ -1,0 +1,37 @@
+# Experiment 2 CONFIRMATORY evaluation -- FROZEN (protocol: docs/experiment_02_protocol.md; Opus H9 review, approved by the owner 2026-10-04).
+# The runner requires `frozen: true` and `--frozen-sha256 <sha256 of this file>`. Do not edit after freezing.
+# F is a statistical component; nothing here identifies a psychological construct.
+stage: confirmatory
+frozen: true
+master_seed: 20261402            # new Experiment-2 namespace (the pilot used 20261401)
+data_source: fresh               # fresh held-out learners from the unchanged Experiment-1 generator (X2-D10)
+heldout_N: 300
+exp1:
+  stage_config: configs/experiment_01/stage_confirmatory.yaml
+  results: results/experiment_01/confirmatory/1b1307a48a
+track:
+  datasets:
+    - {scenarios: [S1, S2, S8n, S8], N_list: [300, 1000], rep_range: [0, 20]}
+  known_scenarios: [S1, S2]       # known-parameter arms where the model is exact
+  indicator: {scenarios: [S1], rho: [0.3, 0.6]}
+sensitivity_exclude:              # prespecified: the one Experiment-1 main fit that missed the decrement tolerance
+  - {scenario: S8n, N: 1000, rep: 13}
+bound: {scenario: S1}
+ref:                              # R1 validation of the SMC reference (S1, N=1000 held-out learners, 2 per template)
+  scenario: S1
+  N: 1000
+  rep_range: [0, 10]
+  per_template: 2
+  n_seeds: 10
+  n_particles: 32768
+  doubling_factor: 4
+  n_seeds_b1: 3
+ref_prod:                         # production reference on ALL 300 held-out learners of S1 N=1000, replications 0-19
+  scenario: S1
+  N: 1000
+  rep_range: [0, 20]
+  n_particles: 32768
+  n_learners: 300
+# dry-run cost model only (not part of the protocol): calibrated on the H9 re-pilot (validation job 159 s; production job 220 s)
+cost_model_sec: {bound: 1.0, track: 4.0, ref_per_learner_per_kparticle: 0.0202, ref_prod_per_learner_per_kparticle: 0.0224}
+budget: {max_cpu_hours: 12, workers: 4, max_wall_minutes: 300}

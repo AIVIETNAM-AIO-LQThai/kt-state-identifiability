@@ -40,6 +40,8 @@ def job_id(j: dict) -> str:
         return "bound"
     if j["kind"] == "track":
         return f"track__{j['scenario']}__N{j['N']}__r{j['rep']}"
+    if j["kind"] == "ref_prod":
+        return f"refprod__{j['scenario']}__N{j['N']}__r{j['rep']}"
     return f"ref__{j['scenario']}__N{j['N']}__r{j['rep']}"
 
 
@@ -56,6 +58,9 @@ def expand_jobs(cfg2: dict) -> list[dict]:
     rc = cfg2.get("ref")
     if rc:
         out += [dict(kind="ref", scenario=rc["scenario"], N=rc["N"], rep=r) for r in _range(rc["rep_range"])]
+    rp = cfg2.get("ref_prod")
+    if rp:
+        out += [dict(kind="ref_prod", scenario=rp["scenario"], N=rp["N"], rep=r) for r in _range(rp["rep_range"])]
     return out
 
 
@@ -66,13 +71,15 @@ def stage_hash(cfg2: dict) -> str:
 
 def estimate_cost(cfg2: dict, jl: list[dict]) -> dict:
     c = cfg2.get("cost_model_sec", {"bound": 1.0, "track": 3.0, "ref_per_learner_per_kparticle": 0.3})
-    n = {k: sum(j["kind"] == k for j in jl) for k in ("bound", "track", "ref")}
+    n = {k: sum(j["kind"] == k for j in jl) for k in ("bound", "track", "ref", "ref_prod")}
     rc = cfg2.get("ref")
     ref_sec = 0.0
     if rc:
         runs = rc["n_seeds"] + rc["doubling_factor"] + rc.get("n_seeds_b1", 3)
         ref_sec = 8 * rc["per_template"] * rc["n_particles"] / 1000.0 * runs * c["ref_per_learner_per_kparticle"] * 0.9
-    cpu = n["bound"] * c["bound"] + n["track"] * c["track"] + n["ref"] * ref_sec
+    rp = cfg2.get("ref_prod")
+    rp_sec = (rp["n_learners"] * rp["n_particles"] / 1000.0 * c.get("ref_prod_per_learner_per_kparticle", c["ref_per_learner_per_kparticle"]) + c["track"]) if rp else 0.0
+    cpu = n["bound"] * c["bound"] + n["track"] * c["track"] + n["ref"] * ref_sec + n["ref_prod"] * rp_sec
     w = cfg2.get("budget", {}).get("workers", 4)
     return {"jobs": n, "est_cpu_hours": cpu / 3600.0, "est_wall_minutes": cpu / 60.0 / w, "workers": w}
 
@@ -88,6 +95,8 @@ def execute_job(job: dict, cfg2: dict, results_dir: str, chash: str) -> dict:
             res = J.run_bound(cfg2)
         elif job["kind"] == "track":
             res = J.run_track(cfg2, job["scenario"], job["N"], job["rep"])
+        elif job["kind"] == "ref_prod":
+            res = J.run_ref_prod(cfg2, job["rep"])
         else:
             res = J.run_ref(cfg2, job["rep"])
         env.update(status="ok", result=res)
