@@ -4,6 +4,28 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H11: Experiment 2 run complete -> Opus interpretation (2026-10-04)
+
+```text
+MODEL HANDOFF — frozen Experiment-2 run finished; interpretation and addendum review are Opus tasks
+Completed (Sonnet 5.5): C1-C8 of the H9 review; full pytest 84 passed; freeze X2-D14 (config sha256 c8f8971c...2556, code commit 20283e6,
+  master seed 20261402, fresh evaluation learners); cloud run 191/191 jobs ok, 0 errors, 31 min wall; results/experiment_02/confirmatory/eb704015ce
+  (summary.json / summary.md). Gates: R0 passed (nothing exceeds the information bound by > 2 learner-SE, incl. S1 track cells); R1 passed
+  (32,768 particles: p MC RMS 0.00082, R2 sd 0.0003, doubling within 2 SE, min ESS ok); R2 passed on 6,000 production learners
+  (mean |dp| ADF-known vs reference 0.0028; log-loss gain of reference over ADF-known 6e-5 nats [3e-5, 9e-5]).
+Headline numbers (practice positions; NOT yet interpreted): R2 pre/post: bound 0.1134/0.1435, reference 0.1128/0.1420, ADF known 0.1128/0.1420,
+  ADF fitted 0.1118/0.1402. Tracking value (full over priorF, fitted, nats/response) 0.0030 (N=300) and 0.0029 (N=1000); oracle-F over full ~0.021;
+  ideal indicator over full: 0.0096 (rho 0.3), 0.0145 (rho 0.6). Null scenarios (S2, S8n): no spurious tracking gain (R3 False in all four cells;
+  S8n N=1000 rep-13 sensitivity: also False).
+Open for the owner (PC): docs/experiment_02_pc_instructions.md (fingerprint -> addendum-run -> addendum-summarize -> push). Not run yet.
+Next task (Opus 5.5, High, Plan Mode): (1) final interpretation of Experiment 2 against the protocol (claims, limits: known b, exogenous schedule,
+  reset-by-session, Gaussian DGP, indicators are ideal positive controls); write docs/experiment_02_final_report.md; (2) after the PC addendum is pushed,
+  interpret it and write the Experiment-1 addendum + errata (marginal-score units, Newton-decrement wording). Decide whether to open Experiment 3 (unknown b).
+Target: Opus 5.5. Switch: manual (owner). Resume: `Switched to Opus; interpret` (Exp 2 can be interpreted before the addendum arrives).
+```
+
+---
+
 ## MODEL HANDOFF — H10: review approved -> Sonnet closes the gaps, freezes and runs Experiment 2 in the cloud (2026-10-04)
 
 ```text
