@@ -4,6 +4,23 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H2: Stage 0 complete -> Opus gate review (2026-10-05)
+
+```text
+MODEL HANDOFF — Experiment 3 Stage 0 finished; needs the Opus gate review (X3-D03)
+Completed (Sonnet 5.5, .venv12, single-thread BLAS): difficulty_free/ (audit), configs/experiment_03/stage0.yaml, 7 new tests (pass),
+  results/experiment_03/stage0/{audit.json, robustness_seed777_n40000.json}, docs/experiment_03_stage0_report.md (numbers only), X3-F01..F05.
+Headline numbers: b-known SEs reproduce Experiment 1 (0.0386/0.0211). Gate: b free, tau_F = 10, N = 1000 -> rank 66/66, SE(sigma2_F) 0.0121 (< 0.08).
+  tau_F dependence (b free, N = 1000): 0.2 -> 2.10; 1 -> 0.063; 3 -> 0.021; 10 -> 0.012; 60 -> 0.010. tau_F = 0.2: estimator correlation 0.999 with
+  Sigma_M/b coordinates (scale ridge). Surprise (X3-F05): b-free SE below b-known SE for tau_F >= 3.
+For Opus: (1) apply the gate and decide the matrix (is U3 at tau_F = 0.2 worth running as a descriptive failure demonstration, or replace by tau_F = 1?);
+  (2) judge X3-F05 and whether the pilot must compare free vs known on identical data to confirm it; (3) approve Stage 1 scope.
+Next task (Opus 5.5, Plan Mode): gate review, then hand off to Sonnet for Stage 1 (estimators, misfit simulator, tests, pilot).
+Git: the owner runs it (commands listed in the reply). Resume: `Switched to Opus; review Stage 0`.
+```
+
+---
+
 ## MODEL HANDOFF — H1: protocol approved -> Sonnet builds and runs the Stage-0 identifiability audit (2026-10-05)
 
 ```text

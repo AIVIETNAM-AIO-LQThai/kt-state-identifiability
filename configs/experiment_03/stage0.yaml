@@ -1,0 +1,9 @@
+# Experiment 3, Stage 0: analytic identifiability audit with item difficulties known vs free (protocol section 3, X3-D03).
+scenario: S1                     # Experiment-1 design and generating values
+master_seed: 20261001            # same simulation keys as the Experiment-1 audit at the generating point (consistency check)
+tau_F_points: [0.2, 1.0, 3.0, 10.0, 60.0]
+N_list: [300, 1000, 3000]
+score_learners: 20000
+weak_rel_sv: 1.0e-4
+rank_rel_sv: 1.0e-8
+gate_se_threshold: 0.08          # design SE of sigma2_F (b free, tau_F = 10, N = 1000) above which the matrix is re-scoped
