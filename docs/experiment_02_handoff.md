@@ -4,6 +4,31 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H9: implementation and pilot complete -> Opus scientific review and freeze (2026-10-04)
+
+```text
+MODEL HANDOFF — Experiment 2 tooling built and piloted; needs Opus review
+Completed (Sonnet 5.5): package transient_filtering/ (filters, SMC reference, bound, regenerate, metrics, jobs, runner, summarize,
+  addendum), configs/experiment_02/stage_pilot.yaml, configs/experiment_01_addendum/addendum.yaml, tests/test_transient_filtering.py
+  (21 tests, fast + 2 slow), decision log docs/experiment_02_decisions.md. Pilot: 13/13 jobs ok (~0.1 CPU-h), results/experiment_02/pilot/0cc472d76b.
+Verified: bound recursion = direct inversion (1e-16) and reproduces the independent figures; probit moments vs quadrature; reset and
+  cross-covariance; causality (future y/O perturbation); B2(sigma2_F=0) == B1; keep_latent invariance; SMC vs exact orthant
+  probabilities; naive-loop kernels; pair probabilities and S8 gain moments vs analytic; resumable runner, manifest refusal, frozen gate.
+Key findings for Opus (docs/experiment_02_decisions.md): X2-F7 container cannot reproduce Exp-1 data (build-dependent SVD basis of the
+  repeated-eigenvalue Sigma_M); X2-F10 pilot magnitudes; X2-F11 R1 p-gate failed at 16,384 particles (0.0012) -> 32,768 proposed (I04); R2 undecided on 32 learners.
+Open questions needing Opus/owner (not decided by Sonnet):
+  1. Evaluation data source for production: (a) owner runs `fingerprint` on the PC; if it matches, regenerate the Exp-1 held-out sets there and
+     run production on the PC, or (b) fresh Exp-2 namespace (container-reproducible only if Sigma_M sampling is made build-independent, which
+     changes the generator procedure) -> protocol-level choice.
+  2. Review the ADF/SMC/bound mathematics and the metric definitions (bins, R3 rule, persistence statistics) before freezing.
+  3. Freeze configs/experiment_02/stage_confirmatory.yaml (sha256) and approve the production run (budget <= 12 CPU-h; estimate: Exp-2 ~1-2 CPU-h incl. 32,768-particle reference for all
+     S1 N=1000 held-out learners, addendum ~2.1 CPU-h).
+Next task (Opus 5.5, High, Plan Mode): scientific review of the code and pilot; decide data source; freeze the Experiment-2 and addendum configs; request approval of the runs.
+Target: Opus 5.5. Switch: manual (owner). Approval: no confirmatory or addendum production run is authorised yet.
+Resume action: owner switches the model and replies `Switched to Opus; review`.
+```
+---
+
 ## MODEL HANDOFF — H8: protocol approved → Sonnet implements Experiment 2 tooling and the Exp-1 numerical addendum (2026-10-04)
 
 ```text
