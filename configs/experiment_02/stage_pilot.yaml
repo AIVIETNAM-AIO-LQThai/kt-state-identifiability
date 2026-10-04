@@ -1,0 +1,28 @@
+# Experiment 2 PILOT (bounded; <= 0.5 CPU-h). Not a confirmatory configuration; nothing here is frozen.
+# Pilot data come from a FRESH evaluation namespace because the cloud container cannot reproduce the Experiment-1 data
+# (the generating Sigma_M has a repeated eigenvalue, so numpy's SVD-based sampler is build-dependent; see the fingerprint report).
+stage: pilot
+master_seed: 20261401
+data_source: fresh               # fresh | exp1_heldout (needs a fingerprint-verified build)
+heldout_N: 300
+exp1:
+  stage_config: configs/experiment_01/stage_confirmatory.yaml
+  results: results/experiment_01/confirmatory/1b1307a48a
+track:
+  datasets:
+    - {scenarios: [S1, S2, S8n, S8], N_list: [300], rep_range: [0, 2]}
+    - {scenarios: [S1], N_list: [1000], rep_range: [0, 2]}
+  known_scenarios: [S1, S2]       # known-parameter arms (S8/S8n have non-Gaussian gains: no exact known model)
+  indicator: {scenarios: [S1], rho: [0.3, 0.6]}
+bound: {scenario: S1}
+ref:
+  scenario: S1
+  N: 1000
+  rep_range: [0, 2]
+  per_template: 2                 # first 2 learners of each of the 8 templates -> 16 learners per replication
+  n_seeds: 10
+  n_particles: 16384
+  doubling_factor: 4
+  n_seeds_b1: 3
+cost_model_sec: {bound: 1.0, track: 4.0, ref_per_learner_per_kparticle: 0.017}
+budget: {max_cpu_hours: 0.5, workers: 4, max_wall_minutes: 30}
