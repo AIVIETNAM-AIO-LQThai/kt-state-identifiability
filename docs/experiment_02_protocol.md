@@ -311,3 +311,120 @@ I agree that individual tracking under the Experiment 1 process is the right nex
 - `python -m pytest -q`
 
 No new dependencies (NumPy and SciPy only).
+
+---
+
+## Addendum — H9 Opus review of the tooling and pilot; freeze plan (approved by the owner 2026-10-04)
+
+**Session and inputs.**
+- Opus 5.5 (`get_session`: model and last served `claude-opus-5-5`), High effort, Plan Mode.
+- Inputs: branch `exp/transient-state-filtering` at `a65fe4f`, i.e. `transient_filtering/*.py`, `tests/test_transient_filtering.py`, the pilot `results/experiment_02/pilot/0cc472d76b`, and `docs/experiment_02_decisions.md`.
+
+**Owner decisions (2026-10-04, this review):**
+- Evaluation uses **fresh held-out learners** under a new Experiment-2 seed.
+- **The Experiment-2 production run happens in the cloud, monitored.**
+- The Experiment-1 addendum runs on the owner's PC.
+
+## Context
+Sonnet built and piloted the approved protocol. Before anything is frozen, Opus must check that the code computes what the protocol defines, decide the data source, close the gaps between the pilot design and the production design, and set the exact frozen configuration and run procedure.
+
+## A. Scientific review of the code: correct, with gaps to close before freezing
+**Verified by reading the code and the tests:**
+- **ADF probit update** (`filters.probit_update`).
+  - m⁺ = m + κλ/s·Ph and P⁺ = P − λ(λ+u)/s²·PhhᵀP, with s² = v + hᵀPh and λ computed through `log_ndtr`.
+  - Correct for unit noise, for B2-white (v = 1 + σ²_F) and for oracle-F (offset by the true F_t).
+  - Tested against 2-D quadrature and a tail case.
+- **Causal timing in `run_full`:** propagate/reset → indicator → predict and record the pre-answer estimate → update → record the post-answer estimate. A perturbation test confirms that changing future y or O leaves earlier outputs unchanged.
+- **Propagation and reset (`model.propagate`).**
+  - Within a session: the F row and column are scaled by a, and σ²_F(1−a²) is added.
+  - At a reset (including the probe session): mean 0, variance σ²_F, cross-covariances 0, persistent block kept. All of this is tested.
+- **B2-priorF:** uses the persistent marginal with F ~ N(0, σ²_F) at prediction only, and equals B2-full at session starts (tested). This is the X2-D03 definition.
+- **SMC reference (`reference.run_smc`).**
+  - The truncated draw v = −Φ⁻¹(U·Φ(c)) satisfies the sign constraint. The weight increment log Φ(c) is the particle's predictive probability.
+  - The Kalman gain P⁻h/s² uses a covariance shared across particles and learners, which is correct because it is independent of Z.
+  - The pre-answer predictive uses pre-update weights.
+  - Matches exact 3-dimensional orthant probabilities (tested).
+- **Bound:** covariance recursion = direct inversion (≈1e-16). It uses E[I(ℓ)] under the true prior marginal and reproduces the independent figures.
+- **Generator checks:** an independent kernel loop, pair probabilities against Φ₂ for four pair classes, S8 gain moments, and `keep_latent` invariance.
+- **Indicator noise** has its own RNG namespace and is pre-answer. Fitted parameters are read from the frozen Experiment-1 fit envelopes and never refitted.
+
+**Pilot observation needing a guard.** The ADF with known parameters reached post-answer R² 0.155–0.157 against the bound of 0.1436.
+- With a learner-level SE of about 0.013 per 600 learners (about 1.3 SE pooled), this is consistent with sampling noise.
+- But a value above an upper bound is exactly what a bug would produce, and production (12,000 S1 learners for the known arm, SE ≈ 0.003) will resolve it.
+- I am therefore adding **R0, an implementation-validity gate** (C3). It is not a scientific rule.
+
+**Gaps found (Sonnet fixes them before the freeze; all within the approved scope):**
+- **G1. Production reference missing.** `run_ref` implements only the R1 validation design (16 learners per replication, 10 seeds). The protocol's production reference ("all 6,000 S1 N=1000 held-out learners") and the gap decomposition on those learners do not exist yet.
+- **G2. R2 evaluated on the wrong set.** R2 is computed on the 32-learner validation subset. It must use the production reference, which has the same learners as ADF-known and ADF-fitted, so the comparisons are paired.
+- **G3. No dataset provenance.** Jobs do not record a hash of the evaluation data or of the Experiment-1 fit envelope used.
+- **G4. No addendum summarizer.** Results would sit in per-dataset JSON only. There is also no rule that a dataset whose regeneration fails reproduction is reported as a provenance failure rather than interpreted.
+- **G5. The prespecified sensitivity analysis is not computed:** S8n N=1000 excluding rep 13, where the Experiment-1 fit missed the decrement tolerance.
+- **G6. Day-7 mechanism diagnosis incomplete.** Add the pair priorF_fit over B1_fit: priorF − B1 isolates persistent-inference and calibration effects, while full − priorF isolates tracking.
+- **G7. Seed reuse.** The pilot's fresh learners use the seed the confirmatory run would reuse, so confirmatory evaluation needs a **new master seed**.
+- **G8 (minor, descriptive).** The lag-1 statistic is an uncentred ratio Σm_t m_{t−1}/Σm_t². It will be labelled as such; no change.
+
+## B. Changes before the freeze (Sonnet; no scientific change beyond R0)
+**C1. A `ref_prod` job** for each S1 N=1000 replication 0–19:
+- Covers all 300 held-out learners.
+- Runs one SMC pass at the production particle count, plus ADF-known, ADF-fitted (that replication's frozen B2 θ̂) and B1-fitted ADF on the same learners.
+- Stores per-bin summaries for:
+  - MSE pre and post, for ref, ADF-known and ADF-fitted;
+  - log-loss for each;
+  - the paired differences ref−ADF-known (approximation), ADF-known−ADF-fitted (estimation) and ref−bound (looseness);
+  - the template-mix-matched bound;
+  - ESS and resampling counts.
+- Also stores |p_ADF − p_ref|.
+
+**C2. Validation reference (R1)** on S1 N=1000 replications 0–9: 2 learners per template (160 learners), 10 seeds at **32,768 particles**, a 4× doubling run, and a B1 reference with 3 seeds.
+- The particle count rises from 16,384 because the pilot's p-error was 0.0012. At 1/√Np, 32,768 particles should give about 0.00085.
+- The gate stays exactly as approved.
+
+**C3. Summary additions:**
+- **Gap-decomposition table** (practice, probe and all, pre and post): R²_bound ≥ R²_ref ≥ R²_ADF-known ≥ R²_ADF-fitted, with paired learner CIs and replication CIs for the fitted step.
+- **R0:** R²_ref and R²_ADF-known must not exceed R²_bound by more than 2 learner-SE (S1, practice, pre and post, on the production learners).
+  - If R0 fails, there are no scientific claims; the run is stopped and escalated to Opus.
+  - The S1 track cells, 12,000 learners, are checked the same way for ADF-known.
+- **R2 on production learners.**
+- **G5 sensitivity** and the **G6 pair**.
+
+**C4. Provenance in every job:** the sha256 of the evaluation `Y` and `template_id` arrays, the sha256 of the Experiment-1 fit envelope file read, and the numpy/scipy versions. The run is reproducible bit-for-bit within the same build; on another build it gives an equally valid, different draw. This is stated in the report.
+
+**C5. `addendum-summarize`:**
+- Writes `results/experiment_01_addendum/summary.{json,md}`: reproduction status, KKT and Hessian at three steps, the τ_F profile, attained B1/B2 improvement and p-value effect, by tier.
+- Only datasets with `reproduces_registered = true` are interpreted. The rest are listed as provenance failures.
+- The document `docs/experiment_01_addendum_numerical.md` is written later by Opus, after the PC run.
+
+**C6. Configs.**
+- `configs/experiment_02/stage_confirmatory.yaml`:
+  - `frozen: true`, `data_source: fresh`, **master_seed 20261402**;
+  - track: S1, S2, S8n, S8 × N ∈ {300, 1000} × reps 0–19 (160 jobs);
+  - known arms in S1 and S2; indicators in S1, ρ ∈ {0.3, 0.6};
+  - ref validation as in C2, ref_prod as in C1; budget cap 12 CPU-h.
+- Its sha256 is recorded in the decision log (X2-D10).
+- The addendum config gets its own sha256 record (X2-D11). The addendum is not frozen by a runner gate, so the recorded sha is the audit trail.
+
+**C7. Tests:**
+- a tiny `ref_prod` end-to-end run;
+- R0 computation on synthetic numbers, including the failing case;
+- the G5 sensitivity code path;
+- `addendum-summarize` on two fabricated dataset JSONs, one reproduced and one not;
+- provenance hashes present.
+
+The full `pytest` suite must pass.
+
+**C8. A small re-pilot** (≤ 0.1 CPU-h, pilot config with C1–C4 and 2 reps), then the confirmatory **dry-run**. Sonnet stops if the projected cost exceeds 3 CPU-h. The current estimate is about 1.5 CPU-h: track about 5 min, validation about 25 min, ref_prod about 55 min of CPU.
+
+## C. Run procedure after approval
+1. **Sonnet (cloud):** C1–C8 → commit and push → freeze (record sha256) → run `python -m transient_filtering run --config configs/experiment_02/stage_confirmatory.yaml --frozen-sha256 <sha> --workers 4` while the session is active. The run is resumable. Then `summarize`, commit and push. **If R0 or R1 fails, stop and report; nothing is interpreted.**
+2. **Owner (PC, can happen in parallel):**
+   1. `git pull`
+   2. `python -m transient_filtering fingerprint --config configs/experiment_02/stage_confirmatory.yaml --dataset S1:300:0 --dataset S2:1000:3 --dataset S8n:1000:13 --dataset S8:300:8 --out results/experiment_01_addendum/fingerprint_pc.json`
+   3. **only if all match:** `python -m transient_filtering addendum-run --config configs/experiment_01_addendum/addendum.yaml --workers <cores-1>` (about 2 CPU-h), then `addendum-summarize`, and push.
+
+   If any fingerprint fails, stop and send it to me. The addendum cannot then reproduce the registered datasets, and that is itself an addendum finding.
+3. **Opus (H11):** interpret Experiment 2 and write the Experiment-1 addendum and errata documents.
+
+**Guards that stay in force:** no change to `kt_trial/` or Experiment-1 results; no tuning on confirmatory outcomes; the 12 CPU-h cap; F is never given a psychological label.
+
+## D. Handoff
+H10 → Sonnet 5.5 (Medium; High for C1/C3), carrying out B and C.1. Manual model switch by the owner. Resume with `Switched to Sonnet; continue`.

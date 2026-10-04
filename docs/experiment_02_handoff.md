@@ -4,6 +4,30 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H10: review approved -> Sonnet closes the gaps, freezes and runs Experiment 2 in the cloud (2026-10-04)
+
+```text
+MODEL HANDOFF — Experiment 2 freeze and production (cloud); addendum on the owner's PC
+Completed (Opus, H9): scientific review of transient_filtering at a65fe4f (ADF update, timing, reset, priorF, SMC, bound, generator checks:
+  correct). Owner decisions X2-D10 (fresh learners, master seed 20261402), X2-D11 (Exp-2 in the cloud, addendum on the PC), X2-D12 (R0 gate).
+Next task (Sonnet 5.5; Medium, High for C1/C3) — protocol addendum H9, sections B and C.1:
+  C1 ref_prod job (all 300 held-out learners x S1 N=1000 reps 0-19; one SMC run at 32,768 particles + ADF-known, ADF-fitted, B1 ADF; paired
+     gap summaries; bound for the template mix). C2 R1 validation at 32,768 particles (reps 0-9, 2 per template, 10 seeds, x4 doubling, B1 3 seeds).
+  C3 summary: gap-decomposition table, R0 gate, R2 on production learners, S8n rep-13 sensitivity, pair priorF_fit over B1_fit.
+  C4 provenance hashes (evaluation Y/template_id sha256, Exp-1 fit-envelope sha256, numpy/scipy). C5 addendum-summarize.
+  C6 configs/experiment_02/stage_confirmatory.yaml (frozen: true, data_source fresh, master_seed 20261402, track S1/S2/S8n/S8 x {300,1000} x
+     reps 0-19, known arms S1/S2, indicators S1 rho 0.3/0.6); record its sha256 (and the addendum config sha256) in the decision log.
+  C7 tests; full pytest. C8 re-pilot <= 0.1 CPU-h, then dry-run; STOP if projected > 3 CPU-h.
+  Then run the frozen config in the cloud (--frozen-sha256, 4 workers), summarize, commit and push.
+  STOP and escalate to Opus if R0 or R1 fails, any job errors persist, or anything would change the question, generator, estimands,
+  comparisons, rules or budget. Write PC instructions for the owner: fingerprint (4 datasets) -> addendum-run -> addendum-summarize -> push.
+Target: Sonnet 5.5. Switch: manual (owner). Approval: changes C1-C8 and the cloud production run are approved (H9); the addendum is approved
+  to run on the owner's PC once fingerprint matches.
+Resume action: owner switches the model and replies `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H9: implementation and pilot complete -> Opus scientific review and freeze (2026-10-04)
 
 ```text
