@@ -4,6 +4,20 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H12: Experiment 2 interpreted and closed; Experiment-1 addendum pending on the owner's PC (2026-10-04)
+
+```text
+MODEL HANDOFF — no model task until the owner pushes the addendum results
+Completed (Opus): final interpretation (X2-D16), docs/experiment_02_final_report.md, docs/experiment_01_errata.md (E1-E4; registered report unchanged).
+Pending (owner, PC): docs/experiment_02_pc_instructions.md -> fingerprint (4 datasets) -> addendum-run (53 datasets, ~2 CPU-h) -> addendum-summarize -> push.
+Next task (Opus 5.5, Plan Mode) after the push: interpret results/experiment_01_addendum/summary.{json,md} and write
+  docs/experiment_01_addendum_numerical.md (no registered result is replaced). If the fingerprint fails, interpret that as a provenance finding.
+Later (needs a new protocol discussion): Experiment 3, unknown item difficulties with item misfit.
+Resume: `Switched to Opus; interpret addendum` (or `Switched to Opus; plan Experiment 3`).
+```
+
+---
+
 ## MODEL HANDOFF — H11: Experiment 2 run complete -> Opus interpretation (2026-10-04)
 
 ```text

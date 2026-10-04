@@ -58,3 +58,11 @@ tests/                   unit, Monte-Carlo, derivative, resume and identifiabili
 docs/                    plan, decision log, handoffs, reports
 results/experiment_01/   audit/, <stage>/<config-hash>/{manifest.json, jobs/*.json, summary.*}
 ```
+
+## Experiment 2 (branch `exp/transient-state-filtering`)
+
+Individual tracking of F under the Experiment-1 process (package `transient_filtering/`). **Complete**; see
+`docs/experiment_02_final_report.md`. In short: with known difficulties, F is only ~11-14 % recoverable from answers (the information
+bound is essentially attained by an SMC reference and by a Gaussian filter), so the causal forecasting value of tracking is ~0.003 nats
+per response. No spurious tracking occurs when F is absent. Errata to the Experiment-1 report: `docs/experiment_01_errata.md`.
+
