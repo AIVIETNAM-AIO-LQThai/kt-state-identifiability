@@ -4,6 +4,29 @@ Newest entry first. Each entry is self-contained so the next model can resume fr
 
 ---
 
+## MODEL HANDOFF — H13: addendum run 1 used the wrong interpreter -> Sonnet adds guards; owner reruns in .venv12 (2026-10-04)
+
+```text
+MODEL HANDOFF — Experiment-1 addendum: fix the environment guard and output location, then the owner reruns
+Completed (Opus): diagnosis of run 1 (X2-F13: system Python with numpy 2.5.1 instead of .venv12 with numpy 2.5.3; data reproduced; CLR
+  differences tiny and all one-sided; verdict-safe) and X2-F14 (.gitignore hid the per-dataset outputs). Owner chose a rerun in the exact env (X2-D17).
+Next task (Sonnet 5.5, Medium):
+  (a) record sys.executable/python/numpy/scipy in every addendum per-dataset result and in the summary;
+  (b) `fingerprint` and `addendum-run` refuse unless numpy == 2.5.3 and scipy == 1.18.1 (read from the Experiment-1 manifest env), printing the
+      interpreter path; no override flag;
+  (c) per-dataset outputs to `<out_dir>/per_dataset/` (not ignored); `addendum-summarize` reads per_dataset/ and the legacy datasets/;
+  (d) configs/experiment_01_addendum/addendum_run2.yaml = addendum.yaml with out_dir results/experiment_01_addendum/run2; record its sha256 (X2-D18);
+  (e) a test for the guard (monkeypatched versions) and for the output location; full pytest;
+  (f) rewrite docs/experiment_02_pc_instructions.md: call `<path>\.venv12\Scripts\python.exe -m ...` explicitly; first print sys.executable and
+      numpy/scipy versions; `git add -f results/experiment_01_addendum/datasets` for run 1's files; run-2 commands (fingerprint -> addendum-run
+      -> addendum-summarize, all with addendum_run2.yaml) -> push.
+  Do not modify run 1's files or any Experiment-1/2 result. Commit, push, then STOP for the owner's PC run.
+Then Opus (H14): interpret run 2 and write docs/experiment_01_addendum_numerical.md.
+Target: Sonnet 5.5. Switch: manual. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H12: Experiment 2 interpreted and closed; Experiment-1 addendum pending on the owner's PC (2026-10-04)
 
 ```text
