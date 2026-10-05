@@ -4,6 +4,23 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H5: confirmatory design approved -> Sonnet: U4/U5 mini-pilot, rules, freeze, owner go-ahead, run (2026-10-05)
+
+```text
+MODEL HANDOFF — Experiment 3 freeze and confirmatory run (owner's PC)
+Completed (Opus): pilot review and confirmatory design X3-D12 (cap 150 CPU-h kept by the owner; matrix about 130 CPU-h; PH3a-PH3f, power, H3c; gates G1-G3).
+Next task (Sonnet 5.5):
+  1. U4/U5 mini-pilot (seed 20262001; 2 reps x N {300, 1000}; known + free fits only). Escalate if any fit fails to converge or timings exceed
+     the pilot's by > 50 %.
+  2. difficulty_free/summarize.py: implement PH3a-PH3f, power, G1-G2, appendix table exactly as X3-D12; tests on synthetic inputs (pass/fail/inconclusive, CP).
+  3. configs/experiment_03/stage_confirmatory.yaml (frozen: true; X3-D12 matrix; U4/U5 lambda_cv 0.3; appendix cell; measured cost model;
+     budget max 150 CPU-h, 18 workers). Dry-run must be <= 150 CPU-h. Record sha256 as X3-D13. Full pytest (X3-F06 exception documented).
+  4. Give the owner the exact run command and WAIT for the owner's go-ahead before running it. After the run: summarize, list git commands, STOP.
+Then Opus: interpretation. Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H4: Stage 1 built and piloted -> Opus review, matrix decision and freeze (2026-10-05)
 
 ```text
