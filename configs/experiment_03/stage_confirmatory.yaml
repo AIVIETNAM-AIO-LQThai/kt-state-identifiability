@@ -1,0 +1,30 @@
+# Experiment 3 CONFIRMATORY protocol -- FROZEN (decision X3-D12, Opus review approved by the owner on 2026-10-05).
+# The runner requires `frozen: true` and `--frozen-sha256 <sha256 of this file>`. Do not edit after freezing.
+# F is a statistical component; nothing here identifies a psychological construct.
+stage: confirmatory
+frozen: true
+master_seed: 20262002              # new namespace (the pilots used 20262001)
+n_starts: 5
+cal_sd: 0.2                        # calibration error SD of the external difficulties (probit units)
+scenarios:
+  - {id: U1, base: S1}                                  # F present, tau_F = 10
+  - {id: U2, base: S2}                                  # F absent
+  - {id: U3, base: S1, tau_F: 1.0}                      # F present, tau_F = 1 min (partial identification)
+  - {id: U4, base: S2, lambda_cv: 0.3}                  # F absent, item discrimination misfit
+  - {id: U5, base: S1, lambda_cv: 0.3}                  # F present, item discrimination misfit
+  - {id: A02, base: S1, tau_F: 0.2, N_list: [1000]}     # appendix: near-white F, 5 replications, fits only
+N_list: [300, 1000]
+reps: {default: [0, 20], A02: [0, 5]}                   # python range(lo, hi)
+arms:
+  U1: [known, cal, free]
+  U2: [known, cal, free]
+  U3: [known, free]
+  U4: [known, free]
+  U5: [known, free]
+  A02: [known, free]
+null_bootstrap:                    # free-difficulty estimator only; boundary-aware parametric bootstrap, alpha = 0.05
+  - {scenarios: [U2, U4], N_list: [300, 1000], rep_range: [0, 10], arms: [free], B: 39}   # false positives (PH3b, PH3c); min p = 0.025
+  - {scenarios: [U1, U5], N_list: [300, 1000], rep_range: [0, 5],  arms: [free], B: 19}   # power (descriptive); min p = 0.05
+# dry-run cost model only (not part of the protocol): measured per-job seconds from the pilot (3 replications per cell)
+cost_model_sec: {fit_known: 87, fit_cal: 94, fit_free: 193, null_known: 70, null_cal: 70, null_free: 208}
+budget: {max_cpu_hours: 150, workers: 18, max_wall_minutes: 1200}

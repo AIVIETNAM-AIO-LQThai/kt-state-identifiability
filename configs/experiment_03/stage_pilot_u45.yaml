@@ -1,0 +1,16 @@
+# Experiment 3 mini-pilot of the discrimination-misfit scenarios U4 and U5 (X3-D12, H5 step 1). Not confirmatory.
+stage: pilot
+master_seed: 20262001
+n_starts: 5
+cal_sd: 0.2
+scenarios:
+  - {id: U4, base: S2, lambda_cv: 0.3}   # F absent, item discrimination misfit
+  - {id: U5, base: S1, lambda_cv: 0.3}   # F present, item discrimination misfit
+N_list: [300, 1000]
+reps: {default: [0, 2]}
+arms:
+  U4: [known, free]
+  U5: [known, free]
+null_bootstrap: []
+cost_model_sec: {fit_known: 90, fit_cal: 95, fit_free: 195, null_known: 70, null_cal: 70, null_free: 208}
+budget: {max_cpu_hours: 2, workers: 8, max_wall_minutes: 60}

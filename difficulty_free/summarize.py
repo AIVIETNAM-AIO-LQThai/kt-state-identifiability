@@ -72,6 +72,7 @@ def summarize(results_dir: str) -> dict:
                 a.setdefault("B2_estimates", {})[p] = {"mean": float(v.mean()), "sd": float(v.std(ddof=1)) if len(v) > 1 else None,
                                                        "bias": float(v.mean() - tv), "mcse_bias": float(v.std(ddof=1) / np.sqrt(len(v))) if len(v) > 1 else None,
                                                        "rmse": float(np.sqrt(((v - tv) ** 2).mean())), "values": v.tolist()}
+            a["sigma2F_by_rep"] = {r["rep"]: r["arms"][arm]["B2"]["theta"]["sigma2_F"] for r in rr if r["arms"][arm]["B2"].get("status") != "failed"}
             a["share_sigma2F_at_zero"] = float(np.mean([f["theta"]["sigma2_F"] <= 1e-6 for f in b2])) if b2 else None
             if arm == "free":
                 a["b_rmse_mean"] = float(np.mean([f["b_rmse"] for f in b2]))
@@ -105,6 +106,8 @@ def summarize(results_dir: str) -> dict:
                                                         "null_clr_q95": float(np.quantile(clr, 0.95))}
     summary = {"manifest": {k: man.get(k) for k in ("stage", "config_hash", "code_hash", "git", "env")},
                "accounting": {"jobs": len(envs), "ok": len(ok), "errors": len(envs) - len(ok)}, "cells": out_cells, "null_tests": null_summary}
+    from .rules import evaluate
+    summary["rules"] = evaluate(summary)
     write_json_atomic(rd / "summary.json", summary)
     (rd / "summary.md").write_text(_markdown(summary), encoding="utf-8")
     return summary
@@ -137,4 +140,7 @@ def _markdown(S: dict) -> str:
         for k, v in S["null_tests"].items():
             sid, N, rep, arm = k.split("|")
             L.append(f"| {sid} {N} {rep} | {arm} | {_f(v['clr_observed'], 2)} | {v['B_ok']}/{v['B_failed']} | {_f(v['p_value'], 3)} | {_f(v['min_attainable_p'], 3)} | {v['reject_at_0.05']} | {_f(v['mean_null_runtime_s'], 0)} |")
+    if S.get("rules"):
+        from .rules import markdown
+        L += markdown(S["rules"])
     return "\n".join(L) + "\n"

@@ -4,6 +4,25 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H6: config frozen; waiting for the owner's go-ahead to run Experiment 3 (2026-10-05)
+
+```text
+MODEL HANDOFF — Experiment 3 confirmatory run is READY, not started
+Completed (Sonnet 5.5): U4/U5 mini-pilot (8/8 ok, all converged; X3-F12), rules and gates implemented and tested, frozen config
+  configs/experiment_03/stage_confirmatory.yaml sha256 69ddc7f7c1243c28803366586354e9448a9f0edf42a45b0d98b4c8c9cea38c98 (X3-D13), dry-run 130.1 CPU-h, full pytest 109 passed / 1 known failure.
+Open flag (X3-F13): mini-pilot timings were 1.5-1.9x the main pilot's while an unrelated project's job kept the CPU at ~95 %. Not established
+  as a property of the misfit scenarios. Recommend running with the machine otherwise idle; if the first jobs run much slower than ~280 s per
+  known+free fit job, stop and reassess (wall time would double; CPU-h cap still applies).
+Run command (PowerShell, repo root; owner go-ahead required):
+  $env:OPENBLAS_NUM_THREADS='1'; $env:OMP_NUM_THREADS='1'; $env:MKL_NUM_THREADS='1'
+  & "<venv12>\Scripts\python.exe" -m difficulty_free run --config configs/experiment_03/stage_confirmatory.yaml --frozen-sha256 69ddc7f7c1243c28803366586354e9448a9f0edf42a45b0d98b4c8c9cea38c98 --workers 18
+  then: -m difficulty_free summarize --results results\experiment_03\confirmatory\38c681a770   (resumable; re-run the same command if interrupted)
+Next (Opus 5.5, Plan Mode): interpret the confirmatory results against X3-D12 (gates first). Git: the owner runs it.
+Resume: `Switched to Opus; interpret Experiment 3` (after the run and push).
+```
+
+---
+
 ## MODEL HANDOFF — H5: confirmatory design approved -> Sonnet: U4/U5 mini-pilot, rules, freeze, owner go-ahead, run (2026-10-05)
 
 ```text

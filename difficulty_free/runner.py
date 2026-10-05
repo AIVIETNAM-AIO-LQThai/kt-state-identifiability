@@ -41,7 +41,7 @@ def job_id(j: dict) -> str:
 
 
 def expand_jobs(stage: dict) -> dict:
-    fit = [dict(kind="fit", scenario=s["id"], N=N, rep=r) for s in stage["scenarios"] for N in stage["N_list"]
+    fit = [dict(kind="fit", scenario=s["id"], N=N, rep=r) for s in stage["scenarios"] for N in s.get("N_list", stage["N_list"])
            for r in range(*stage["reps"].get(s["id"], stage["reps"]["default"]))]
     null = []
     for d in stage.get("null_bootstrap", []):
