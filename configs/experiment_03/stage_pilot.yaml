@@ -1,0 +1,22 @@
+# Experiment 3 PILOT (X3-D10). Not confirmatory; nothing here is frozen.
+# Same datasets are fitted with three estimators: known difficulties, calibrated (error) difficulties treated as known, free difficulties.
+stage: pilot
+master_seed: 20262001
+n_starts: 5
+cal_sd: 0.2                         # calibration error SD of the external difficulties (probit units)
+scenarios:
+  - {id: U1, base: S1}              # F present, tau_F = 10 (generating values of Experiment 1)
+  - {id: U2, base: S2}              # F absent
+  - {id: U3, base: S1, tau_F: 1.0}  # F present, tau_F = 1 min (partial identification when b is free)
+N_list: [300, 1000]
+reps: {default: [0, 3], U3: [0, 2]}  # python range(lo, hi)
+arms:
+  U1: [known, cal, free]
+  U2: [known, cal, free]
+  U3: [known, free]
+null_bootstrap:                      # one free-b null bootstrap per null cell (B = 19); known and cal arms only on the first dataset
+  - {scenarios: [U2], N_list: [300, 1000], rep_range: [0, 1], arms: [free], B: 19}
+  - {scenarios: [U2], N_list: [300, 1000], rep_range: [0, 1], arms: [known], B: 5}
+# dry-run cost model only (not part of the protocol); refined by the pilot itself
+cost_model_sec: {fit_known: 110, fit_cal: 110, fit_free: 300, null_known: 80, null_cal: 80, null_free: 250}
+budget: {max_cpu_hours: 12, workers: 18, max_wall_minutes: 240}

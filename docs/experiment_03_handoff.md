@@ -4,6 +4,25 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H4: Stage 1 built and piloted -> Opus review, matrix decision and freeze (2026-10-05)
+
+```text
+MODEL HANDOFF — Experiment 3 pilot finished; escalation: projected cost above the 150 CPU-h ceiling
+Completed (Sonnet 5.5, .venv12, single-thread BLAS, owner's PC): difficulty_free/ (free-b estimators, simulator, jobs, runner, summarize), pilot config,
+  11 new tests, pilot run 64/64 ok (3.95 CPU-h, 15.4 min), docs/experiment_03_pilot_report.md (numbers only), X3-F08..F11.
+Headline (3 reps/cell; indicative): known and free estimators near the truth; the calibrated-difficulty estimator is strongly biased upward
+  (0.26 / 0.36 at U1 N = 1000 / 300; 0.31 / 0.17 with F absent; tau_F-hat near white). Free fits cost 2.2x known; free null replicate about 208 s.
+  Free-b b-hat RMSE 0.04-0.09 (N = 1000 / 300).
+ESCALATION (X3-F10): section-4 matrix as written = 382 CPU-h (> 150). Options priced: free-only nulls B = 49 with 10 datasets 175 h; 5 datasets 96 h;
+  null cells only (U2, U4) B = 99, 5 datasets 132 h. U4/U5 (discrimination misfit) not piloted.
+For Opus: (1) choose the null-test design and the final matrix within 150 CPU-h (or approve a higher cap); (2) decide whether to pilot U4/U5 first
+  (cheap: fits only); (3) write and freeze the confirmatory hypotheses H3a-H3f and decision rules (PH-style: bias MC CI vs +-0.04; false-positive
+  rule; H3e/H3f continuous); (4) check the heavy-tail cases (U2 N = 300 free: one hessian_not_pd / decrement 0.054).
+Next task (Opus 5.5, Plan Mode): review, matrix decision, freeze plan. Git: owner runs it (commands in the reply). Resume: `Switched to Opus; review pilot`.
+```
+
+---
+
 ## MODEL HANDOFF — H3: Stage-0 gate passed -> Sonnet builds Stage 1 and runs the pilot (2026-10-05)
 
 ```text

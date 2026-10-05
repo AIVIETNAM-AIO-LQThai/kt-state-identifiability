@@ -20,7 +20,25 @@ def main(argv=None) -> int:
     a.add_argument("--out", default="results/experiment_03/stage0")
     a.add_argument("--score-learners", type=int, default=None)
     sub.add_parser("check-env")
+    r = sub.add_parser("run")
+    r.add_argument("--config", required=True)
+    r.add_argument("--dry-run", action="store_true")
+    r.add_argument("--workers", type=int, default=None)
+    r.add_argument("--retry-errors", action="store_true")
+    r.add_argument("--allow-mismatch", action="store_true")
+    r.add_argument("--frozen-sha256", default=None)
+    s = sub.add_parser("summarize")
+    s.add_argument("--results", required=True)
     args = ap.parse_args(argv)
+    if args.cmd == "run":
+        from .runner import run_stage
+        return run_stage(args.config, workers=args.workers, dry_run=args.dry_run, retry_errors=args.retry_errors,
+                         allow_mismatch=args.allow_mismatch, frozen_sha256=args.frozen_sha256)
+    if args.cmd == "summarize":
+        from .summarize import summarize
+        summarize(args.results)
+        print("wrote summary.json / summary.md in", args.results)
+        return 0
     from kt_trial.config import load_scenario, load_yaml
     from kt_trial.manifest import environment_info, git_info
     from kt_trial.runner import write_json_atomic
