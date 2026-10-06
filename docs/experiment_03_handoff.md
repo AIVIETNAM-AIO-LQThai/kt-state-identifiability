@@ -4,6 +4,25 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H8: calibration addendum approved -> Sonnet implements, pilots, freezes, runs after the owner's go-ahead (2026-10-06)
+
+```text
+MODEL HANDOFF — Experiment 3 addendum: calibration of the free-difficulty null test (X3-D15)
+Next task (Sonnet 5.5):
+  1. runner.py: stage `calibration`, job kind `warp` per (scenario, N, rep); ENFORCED CPU-h cap (sum of job runtimes; stop submitting at
+     budget.max_cpu_hours; resumable).
+  2. jobs.py: run_warp_job = make_dataset + fit_free (B1, B2) -> T; null_free_replicate(b = 0, addendum seed keys) -> T*; record sigma2_F/tau_F
+     of both, flags, runtimes, env.
+  3. calibration.py: alpha-hat (T_r > q95 of T*, ties at 0 as registered), pairs-bootstrap CI (2,000), rules X3-D15, descriptives, markdown; wire into summarize.
+  4. Tests: alpha-hat ~ 0.05 when T and T* are i.i.d.; liberal when T is stochastically larger; rule outcomes; cap stop; tiny end-to-end run.
+  5. Pilot: 3 datasets per cell (timing only). Then configs/experiment_03/addendum_calibration.yaml (frozen: true, seed 20262101, C2/C4 x
+     N {300, 1000} x R = 100, cap 100 CPU-h); dry-run <= 100 CPU-h; record sha256 (X3-D16); full pytest.
+  6. Give the owner the run command and WAIT for the go-ahead (machine idle). After the run: summarize, list git commands, STOP for Opus.
+Escalate: pilot timings > 30 % above the estimate, any rule/estimator question. Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H7: Experiment 3 interpreted and closed (2026-10-06)
 
 ```text
