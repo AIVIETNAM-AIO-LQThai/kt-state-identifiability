@@ -66,3 +66,10 @@ Individual tracking of F under the Experiment-1 process (package `transient_filt
 bound is essentially attained by an SMC reference and by a Gaussian filter), so the causal forecasting value of tracking is ~0.003 nats
 per response. No spurious tracking occurs when F is absent. Errata to the Experiment-1 report: `docs/experiment_01_errata.md`.
 
+## Experiment 3 (branch `exp/unknown-difficulty-recoverability`)
+
+Recovery of F when item difficulties are unknown (package `difficulty_free/`). **Complete**; see `docs/experiment_03_final_report.md`.
+In short: estimating difficulties jointly recovers sigma2_F at tau_F = 10 without material bias and more precisely than with known
+difficulties; fixing difficulties from an external calibration with error inflates sigma2_F-hat by about +0.2 and can create F where
+none exists; the free-difficulty null test's 5 % level is not yet established (3/20 rejections in each null scenario).
+

@@ -4,6 +4,20 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H7: Experiment 3 interpreted and closed (2026-10-06)
+
+```text
+MODEL HANDOFF — no pending model task
+Completed (Opus): provenance check, pre-registered verdicts X3-D14, deviation X3-F14 (167 CPU-h vs 150 cap), docs/experiment_03_final_report.md.
+Key results: joint difficulty estimation recovers sigma2_F (PH3a pass) more precisely than known difficulties (SD ratio 0.46); external
+  difficulties with SD-0.2 error inflate sigma2_F-hat by about +0.2 everywhere (PH3e); free-b robust to discrimination misfit with F present (PH3d);
+  free-b sigma2_F-hat meaningless on the white-noise ridge; free-b null test 3/20 + 3/20 rejections: calibration not established.
+Open (recommended next): calibration study of the free-difficulty null test (>= 100 null datasets, B >= 99); a 2PL extension needs its own protocol.
+Git: the owner runs it. Resume for new work: `Switched to Opus; plan <next>`.
+```
+
+---
+
 ## MODEL HANDOFF — H6: config frozen; waiting for the owner's go-ahead to run Experiment 3 (2026-10-05)
 
 ```text
