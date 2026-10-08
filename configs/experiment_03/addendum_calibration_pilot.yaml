@@ -1,0 +1,10 @@
+# Experiment 3 addendum PILOT: timing of the warp-speed calibration unit (X3-D15). Not used for inference; seed differs from the frozen run.
+stage: pilot
+master_seed: 20262100
+n_starts: 5
+scenarios:
+  - {id: C2, base: S2}                       # F absent, clean
+  - {id: C4, base: S2, lambda_cv: 0.3}       # F absent, discrimination misfit
+warp: {scenarios: [C2, C4], N_list: [300, 1000], rep_range: [0, 3]}
+cost_model_sec: {warp: 730}
+budget: {max_cpu_hours: 10, enforce_cpu_cap: true, workers: 12, max_wall_minutes: 120}

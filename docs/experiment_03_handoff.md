@@ -4,6 +4,23 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H9: calibration addendum frozen; waiting for the owner's go-ahead (2026-10-06)
+
+```text
+MODEL HANDOFF — calibration addendum READY, not started
+Completed (Sonnet 5.5): implementation and tests (X3-F15), timing pilot 12/12 ok at 297 s per dataset (X3-F16), frozen config sha256 15b17af38834d3fdd4455080ddd4a2d5b29631fa34c2d1c90160f2da293db4c8 (X3-D16),
+  dry-run 33.3 CPU-h (about 2 h on 18 workers), cap 100 CPU-h enforced, full pytest 119 passed / 1 known failure.
+Run (PowerShell, repo root; machine idle; owner go-ahead required):
+  $env:OPENBLAS_NUM_THREADS='1'; $env:OMP_NUM_THREADS='1'; $env:MKL_NUM_THREADS='1'
+  & "<venv12>\Scripts\python.exe" -m difficulty_free run --config configs/experiment_03/addendum_calibration.yaml --frozen-sha256 15b17af38834d3fdd4455080ddd4a2d5b29631fa34c2d1c90160f2da293db4c8 --workers 18
+  & "<venv12>\Scripts\python.exe" -m difficulty_free summarize --results results\experiment_03\calibration\01f57a2b78   (resumable; re-run the run command if interrupted)
+Open choice for the owner/Opus: R = 100 (frozen, 33 CPU-h) or a larger R (about 83 CPU-h for R = 250) for a tighter CI; any change needs a new freeze.
+Next (Opus 5.5, Plan Mode): interpret the calibration results against X3-D15 (gate first); write docs/experiment_03_addendum_calibration.md.
+Git: the owner runs it. Resume: `Switched to Opus; interpret calibration`.
+```
+
+---
+
 ## MODEL HANDOFF — H8: calibration addendum approved -> Sonnet implements, pilots, freezes, runs after the owner's go-ahead (2026-10-06)
 
 ```text

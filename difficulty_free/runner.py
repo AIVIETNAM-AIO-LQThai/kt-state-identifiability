@@ -16,7 +16,8 @@ from kt_trial.runner import read_json, write_json_atomic
 
 from . import jobs as J
 
-STAGES = ("pilot", "confirmatory")
+STAGES = ("pilot", "confirmatory", "calibration")
+FROZEN_STAGES = ("confirmatory", "calibration")
 REPO = Path(__file__).resolve().parent.parent
 
 
@@ -35,6 +36,8 @@ def provenance() -> dict:
 
 
 def job_id(j: dict) -> str:
+    if j["kind"] == "warp":
+        return f"warp__{j['scenario']}__N{j['N']}__r{j['rep']}"
     if j["kind"] == "fit":
         return f"fit__{j['scenario']}__N{j['N']}__r{j['rep']}"
     return f"null__{j['scenario']}__N{j['N']}__r{j['rep']}__{j['arm']}__b{j['b']}"
@@ -42,7 +45,10 @@ def job_id(j: dict) -> str:
 
 def expand_jobs(stage: dict) -> dict:
     fit = [dict(kind="fit", scenario=s["id"], N=N, rep=r) for s in stage["scenarios"] for N in s.get("N_list", stage["N_list"])
-           for r in range(*stage["reps"].get(s["id"], stage["reps"]["default"]))]
+           for r in range(*stage["reps"].get(s["id"], stage["reps"]["default"]))] if "reps" in stage else []
+    w = stage.get("warp")
+    if w:                                     # warp-speed calibration jobs (X3-D15): one observed + one bootstrap statistic per dataset
+        fit += [dict(kind="warp", scenario=sid, N=N, rep=r) for sid in w["scenarios"] for N in w["N_list"] for r in range(*w["rep_range"])]
     null = []
     for d in stage.get("null_bootstrap", []):
         for sid in d["scenarios"]:
@@ -62,11 +68,15 @@ def estimate_cost(stage: dict, jobs: dict) -> dict:
     c = stage["cost_model_sec"]
     cpu = 0.0
     for j in jobs["phase1"]:
+        if j["kind"] == "warp":
+            cpu += c["warp"]
+            continue
         cpu += sum(c[f"fit_{a}"] for a in stage["arms"].get(j["scenario"], ["known", "cal", "free"]))
     for j in jobs["phase2"]:
         cpu += c[f"null_{j['arm']}"]
     w = stage.get("budget", {}).get("workers", 4)
-    return {"jobs": {"fit": len(jobs["phase1"]), "null": len(jobs["phase2"])}, "est_cpu_hours": cpu / 3600.0,
+    return {"jobs": {"fit": sum(j["kind"] == "fit" for j in jobs["phase1"]), "warp": sum(j["kind"] == "warp" for j in jobs["phase1"]),
+                     "null": len(jobs["phase2"])}, "est_cpu_hours": cpu / 3600.0,
             "est_wall_minutes": cpu / 60.0 / w, "workers": w}
 
 
@@ -76,8 +86,12 @@ def execute_job(job: dict, stage: dict, results_dir: str, chash: str) -> dict:
     env = {"job_id": job_id(job), "job": job, "config_hash": chash, "code_hash": code_hash(), "env": environment_info(),
            "started": datetime.now(timezone.utc).isoformat()}
     try:
-        res = (J.run_fit_job(stage, job["scenario"], job["N"], job["rep"]) if job["kind"] == "fit"
-               else J.run_null_job(stage, results_dir, job["scenario"], job["N"], job["rep"], job["arm"], job["b"]))
+        if job["kind"] == "fit":
+            res = J.run_fit_job(stage, job["scenario"], job["N"], job["rep"])
+        elif job["kind"] == "warp":
+            res = J.run_warp_job(stage, job["scenario"], job["N"], job["rep"])
+        else:
+            res = J.run_null_job(stage, results_dir, job["scenario"], job["N"], job["rep"], job["arm"], job["b"])
         env.update(status="ok", result=res)
     except Exception as e:
         env.update(status="error", error=repr(e), trace=traceback.format_exc(limit=6))
@@ -114,6 +128,23 @@ def check_manifest(rd: Path, current: dict) -> list[str]:
     return diffs
 
 
+def spent_seconds(rd: Path) -> float:
+    """Summed runtime of all job files already written in this results directory (resume-safe)."""
+    tot = 0.0
+    for f in (rd / "jobs").glob("*.json"):
+        try:
+            tot += float(read_json(f).get("runtime", 0.0))
+        except Exception:
+            pass
+    return tot
+
+
+def cap_reached(spent_s: float, stage: dict) -> bool:
+    """True iff the stage enforces its CPU-hour cap (budget.enforce_cpu_cap) and the summed job runtimes have reached it."""
+    b = stage.get("budget", {})
+    return bool(b.get("enforce_cpu_cap") and b.get("max_cpu_hours") and spent_s >= b["max_cpu_hours"] * 3600.0)
+
+
 def run_stage(stage_path, results_root="results/experiment_03", workers=None, dry_run=False, retry_errors=False,
               allow_mismatch=False, frozen_sha256=None, out=print) -> int:
     stage_path = Path(stage_path)
@@ -121,9 +152,9 @@ def run_stage(stage_path, results_root="results/experiment_03", workers=None, dr
     name = stage["stage"]
     if name not in STAGES:
         out(f"unknown stage {name!r}"); return 2
-    if name == "confirmatory":
+    if name in FROZEN_STAGES:
         if not stage.get("frozen"):
-            out("REFUSED: confirmatory config must contain `frozen: true` (set only after explicit approval)."); return 2
+            out(f"REFUSED: {name} config must contain `frozen: true` (set only after explicit approval)."); return 2
         if frozen_sha256 != file_sha256(stage_path):
             out(f"REFUSED: --frozen-sha256 does not match the config (current sha256: {file_sha256(stage_path)})."); return 2
     chash = stage_hash(stage)
@@ -149,7 +180,11 @@ def run_stage(stage_path, results_root="results/experiment_03", workers=None, dr
     workers = workers or stage.get("budget", {}).get("workers", 4)
     wall_cap = stage.get("budget", {}).get("max_wall_minutes")
     t_start = time.time()
+    capped = False
     stats = {"done_before": 0, "ran": 0, "error": 0}
+    spent = spent_seconds(rd)
+    if cap_reached(spent, stage):
+        out(f"CPU CAP already reached ({spent / 3600:.1f} CPU-h of {stage['budget']['max_cpu_hours']}): nothing submitted."); return 5
     for phase in ("phase1", "phase2"):
         todo = []
         for j in jobs[phase]:
@@ -177,15 +212,17 @@ def run_stage(stage_path, results_root="results/experiment_03", workers=None, dr
             while pending:
                 for fut in as_completed(list(pending)):
                     pending.pop(fut); r = fut.result()
-                    stats["ran"] += 1; stats["error"] += r["status"] != "ok"
+                    stats["ran"] += 1; stats["error"] += r["status"] != "ok"; spent += r["runtime"]
                     out(f"  {r['job_id']} {r['status']} {r['runtime']:.0f}s [{stats['ran']} run, {stats['error']} error, {(time.time() - t_start) / 60:.1f} min]")
                     if wall_cap and (time.time() - t_start) / 60 > wall_cap and not stop:
                         out(f"WALL BUDGET of {wall_cap} min reached: not submitting more jobs. Re-run to resume."); stop = True
+                    if cap_reached(spent, stage) and not stop:
+                        out(f"CPU CAP reached ({spent / 3600:.1f} CPU-h): not submitting more jobs. Finished work is kept; re-run to resume only with a new decision."); stop = True; capped = True
                     if not stop:
                         submit_next()
                     break
             if stop:
-                return 4
+                return 5 if capped else 4
     write_json_atomic(rd / "status.json", {"finished": datetime.now(timezone.utc).isoformat(), **stats, "wall_minutes": (time.time() - t_start) / 60})
     out(f"stage {name} finished: {stats}")
     return 0

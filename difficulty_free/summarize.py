@@ -106,8 +106,14 @@ def summarize(results_dir: str) -> dict:
                                                         "null_clr_q95": float(np.quantile(clr, 0.95))}
     summary = {"manifest": {k: man.get(k) for k in ("stage", "config_hash", "code_hash", "git", "env")},
                "accounting": {"jobs": len(envs), "ok": len(ok), "errors": len(envs) - len(ok)}, "cells": out_cells, "null_tests": null_summary}
-    from .rules import evaluate
-    summary["rules"] = evaluate(summary)
+    warp = [e["result"] for e in ok if e["job"]["kind"] == "warp"]
+    if cells:
+        from .rules import evaluate
+        summary["rules"] = evaluate(summary)
+    if warp:
+        from .calibration import evaluate as cal_evaluate
+        summary["calibration"] = cal_evaluate(warp)
+        summary["calibration_runtime_cpu_h"] = float(sum(e["runtime"] for e in ok if e["job"]["kind"] == "warp") / 3600.0)
     write_json_atomic(rd / "summary.json", summary)
     (rd / "summary.md").write_text(_markdown(summary), encoding="utf-8")
     return summary
@@ -143,4 +149,7 @@ def _markdown(S: dict) -> str:
     if S.get("rules"):
         from .rules import markdown
         L += markdown(S["rules"])
+    if S.get("calibration"):
+        from .calibration import markdown as cal_markdown
+        L += cal_markdown(S["calibration"])
     return "\n".join(L) + "\n"

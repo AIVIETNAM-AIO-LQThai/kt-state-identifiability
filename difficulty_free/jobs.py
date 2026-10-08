@@ -139,3 +139,28 @@ def make_dataset_templates(stage: dict, spec: dict):
     cfg = scenario_cfg_from(spec, stage.get("n_starts"))
     ts = build_templates(cfg)
     return cfg, ts, item_ids(ts, cfg["design"]["items_per_skill"]), None
+
+
+def run_warp_job(stage: dict, sid: str, N: int, rep: int) -> dict:
+    """Warp-speed Monte Carlo unit (X3-D15): the observed free-difficulty CLR T of one fresh dataset, plus ONE bootstrap CLR T* drawn from
+    that dataset's fitted B1-free null (same code path as the registered null test, replicate index 0)."""
+    spec = spec_of(stage, sid)
+    cfg, ts, ids, ds = make_dataset(stage, spec, N, rep)
+    K, G, ms = cfg["design"]["n_skills"], len(ts), stage["master_seed"]
+    pc = pair_counts(ds.Y, ds.template_id, G)
+    skey = (sid, N, rep, "free")
+    f1 = fit_free("B1", ts, pc, cfg["fit"], K, ids, N_ITEMS, skey, ms)
+    f2 = fit_free("B2", ts, pc, cfg["fit"], K, ids, N_ITEMS, skey, ms,
+                  warm=(Theta.from_dict(f1["theta"]), f1["b"]) if f1["status"] != "failed" else None, null_fit=f1)
+    out = {"scenario": sid, "N": N, "rep": rep, "fit_failed": bool(f1["status"] == "failed" or f2["status"] == "failed")}
+    if out["fit_failed"]:
+        return out
+    out.update(T=float(2.0 * (f2["ll"] - f1["ll"])), sigma2_F=f2["theta"]["sigma2_F"], tau_F=f2["theta"]["tau_F"],
+               flags_B1=f1["flags"], flags_B2=f2["flags"], converged=bool(f1["converged"] and f2["converged"]),
+               runtime_fit=f1["runtime"] + f2["runtime"])
+    star = null_free_replicate(f1, ts, cfg, ids, N, 0, (sid, N, rep, "free"), ms)
+    out["star_failed"] = bool(star.get("failed"))
+    if not out["star_failed"]:
+        out.update(T_star=star["clr"], sigma2_F_star=star["sigma2_F"], tau_F_star=star["tau_F"], flags_B2_star=star["flags2"],
+                   runtime_star=star["runtime"])
+    return out

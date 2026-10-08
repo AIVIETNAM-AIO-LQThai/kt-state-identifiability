@@ -1,0 +1,15 @@
+# Experiment 3 ADDENDUM: calibration of the free-difficulty null test -- FROZEN (decision X3-D15, approved by the owner 2026-10-06).
+# Warp-speed Monte Carlo (Giacomini, Politis & White 2013): per fresh null dataset one observed CLR and ONE bootstrap CLR.
+# The runner requires `frozen: true` and `--frozen-sha256 <sha256 of this file>`, and ENFORCES the CPU cap. Do not edit after freezing.
+# Experiment 3's registered results are unchanged by this addendum. F is a statistical component, not a psychological construct.
+stage: calibration
+frozen: true
+master_seed: 20262101              # new namespace (confirmatory 20262002; calibration pilot 20262100)
+n_starts: 5
+scenarios:
+  - {id: C2, base: S2}                       # F absent, clean            (= Experiment-3 U2)
+  - {id: C4, base: S2, lambda_cv: 0.3}       # F absent, discrimination misfit (= Experiment-3 U4)
+warp: {scenarios: [C2, C4], N_list: [300, 1000], rep_range: [0, 100]}     # 100 datasets per cell, 400 in total
+# dry-run cost model only (not part of the protocol): measured on an idle machine in the calibration pilot (mean 297 s per dataset)
+cost_model_sec: {warp: 300}
+budget: {max_cpu_hours: 100, enforce_cpu_cap: true, workers: 18, max_wall_minutes: 600}
