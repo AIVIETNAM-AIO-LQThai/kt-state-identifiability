@@ -109,3 +109,10 @@ The free-arm null means are driven by ridge outliers (§4).
 2. Estimate difficulties jointly rather than fixing external values.
 3. Treat any known-difficulty or near-white (τ̂_F below the answer spacing) F finding as uninterpretable without misfit checks.
 4. A model with item discriminations (2PL) is the natural next extension; it would need its own protocol.
+
+---
+
+**Addendum note (2026-10-08; the registered text above is unchanged).** The calibration study (`docs/experiment_03_addendum_calibration.md`,
+X3-D17) shows that the free-difficulty null test is **liberal under item-discrimination misfit** (about 13 % at nominal 5 % pooled, 17 % at
+N = 1000). Under the clean null its level is inconclusive (0.10, CI [0.035, 0.155]). Large detections are unaffected.
+

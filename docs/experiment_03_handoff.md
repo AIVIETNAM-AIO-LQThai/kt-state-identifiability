@@ -4,6 +4,19 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H10: calibration addendum interpreted; Experiment 3 closed (2026-10-08)
+
+```text
+MODEL HANDOFF — no pending model task
+Completed (Opus): X3-F17 (provenance), X3-D17 (verdict), docs/experiment_03_addendum_calibration.md, pointer in the final report.
+Result: the free-difficulty null test is LIBERAL under item-discrimination misfit (alpha-hat 0.13 pooled, 0.17 at N = 1000, at nominal 0.05);
+  calibration under the clean null is inconclusive (0.10, CI [0.035, 0.155]). Large detections in Experiment 3 are unaffected.
+Recommended next: Experiment 4 — items with unknown discriminations (2PL), including a misfit-robust null test; needs its own Opus protocol.
+Git: the owner runs it. Resume for new work: `Switched to Opus; plan Experiment 4`.
+```
+
+---
+
 ## MODEL HANDOFF — H9: calibration addendum frozen; waiting for the owner's go-ahead (2026-10-06)
 
 ```text
