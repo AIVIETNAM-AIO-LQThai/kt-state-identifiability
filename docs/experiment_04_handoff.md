@@ -4,6 +4,30 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H7: re-pilot accepted, ridge rule X4-D09 -> Sonnet implements it and freezes (2026-10-09)
+
+```text
+MODEL HANDOFF — Experiment 4: ridge rule and freeze (stop before the confirmatory run)
+Completed (Opus): re-pilot review; X4-D09 ("converged on the ridge": white_noise_ridge + PD Hessian + decrement <= 0.01; sensitivity guard delta = 0.25; gate met).
+Next task (Sonnet 5.5):
+  1. fit.py: RIDGE_DEC_TOL = 0.01; after the certificate, re-judge a non-converged fit (ridge flag, PD, decrement <= 0.01) -> converged, flag converged_on_ridge.
+     jobs.py: warp stores ridge_converged (observed B2) and star_ridge_converged (bootstrap B2, from flags2).
+     rules.py: carry both through _warp_rows; _sensitivity(rows, seed) -> _cell_stats verdicts under (S+) T + 0.25 for ridge-converged observed fits and
+     (S-) T* + 0.25 for ridge-converged bootstrap fits; label "fragile to ridge fits" on PH4b (pooled, per N) and PH4c if either differs; paired delta
+     recomputed both ways; ridge counts/decrements in descriptives; frozen_rules_version "X4-D08+D09"; markdown. Keep rule seeds.
+  2. Tests: fit re-judgement (decrement 0.005 ridge PD -> converged_on_ridge; 0.02, non-PD, or off-ridge -> not converged); rules: (S+) can make a verdict
+     fragile; no ridge units -> sensitivity equals primary. All Experiment 4 tests + full suite (X3-F06 known).
+  3. Check run: warp unit V4 N = 1000 rep 1 of stage_pilot2.yaml with the new code into a scratch results dir (~20 min, .venv12, 1-thread BLAS):
+     expect converged_on_ridge and T within 0.01 of 1.54. Report; do not commit as a result.
+  4. Freeze: configs/experiment_04/stage_confirmatory.yaml (X4-D08 (3): seed 20264101, cap 200 enforced, re-pilot cost model; V1/V5 N {300,1000} x 20;
+     V4 150 per N [twopl, free1]; V2 50 per N [twopl]); rep-major order in runner.expand_jobs; dry-run (trim only if > 195 CPU-h); frozen: true;
+     record sha256 + code hash as X4-D10; test the wrong --frozen-sha256 refusal.
+  5. STOP: no confirmatory start without the owner's explicit go-ahead on an idle machine. Records X4-F14, X4-D10, handoff H8, git commands.
+Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H6: polish and rules built; re-pilot gate not strictly met -> Opus (2026-10-09)
 
 ```text
