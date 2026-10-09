@@ -4,6 +4,26 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H3: Stage-0 gate passed -> Sonnet builds the 2PL estimator and runs the pilot (2026-10-09)
+
+```text
+MODEL HANDOFF — Experiment 4 Stage 1 (estimator) and pilot
+Completed (Opus): gate review X4-D07 (passed), X4-F06 (lambda-fixed SE larger than lambda-free: X3-F07 mechanism; no lambda-fixed arm).
+Next task (Sonnet 5.5; High for the objective/gradient), all in discrimination_free/ (difficulty_free/ and kt_trial/ imported only):
+  1. Parameter map [ParamMap(B1|B2) | b (48, [-4, 4]) | w (47, log lambda = P w, |log lambda| <= log 5)]; objective from twopl.core moments +
+     kt_trial.bvn.weighted_cell_loglik_obs; analytic gradient via the per-observation/per-pair adjoint weights chained through twopl.core Jacobians.
+  2. fit (mirror difficulty_free.fit.fit_free: grids, jitter, D19, D22 on all active coords, embedded null, start agreement; starts w = 0, b from
+     start_difficulties; B2 warm from B1); 2PL null replicate (simulate_lambda with lambda-hat); warp job (2PL and 1PL-free, same dataset);
+     results store g and sigma2_F* = g^2 sigma2_F (estimand guard); lambda recovery on centred log lambda.
+  3. runner/summarize/rules following difficulty_free (calibration stage, enforced cap, frozen gate); CLI sets *_NUM_THREADS=1 at import.
+  4. Tests: gradient (113 coords) vs FD; w = 0 equals difficulty_free; nesting; geometric mean of lambda-hat = 1; lambda recovery smoke; g bookkeeping;
+     tiny end-to-end run, resume, cap stop. Full pytest (X3-F06 known).
+  5. Pilot (X4-D07 R4) on the idle PC; report timings, certificates, start agreement, projected cost. Escalate per R5. STOP for the Opus pilot review.
+Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H2: Stage 0 complete -> Opus gate review (2026-10-08)
 
 ```text
