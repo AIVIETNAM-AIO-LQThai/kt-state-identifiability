@@ -1,0 +1,18 @@
+# Experiment 4 PILOT (X4-D07 R4). Not confirmatory; nothing here is frozen.
+# Recovery fits (V1, V5) fit 1PL-free and 2PL on the SAME datasets; warp units (V2, V4) give the observed CLR T and one bootstrap CLR T*.
+stage: pilot
+master_seed: 20264001
+n_starts: 5
+scenarios:
+  - {id: V1, base: S1}                        # equal discriminations, F present (tau_F = 10)
+  - {id: V2, base: S2}                        # equal discriminations, F absent
+  - {id: V4, base: S2, lambda_cv: 0.3}        # discrimination misfit, F absent
+  - {id: V5, base: S1, lambda_cv: 0.3}        # discrimination misfit, F present
+fit: {scenarios: [V1, V5], N_list: [300, 1000], rep_range: [0, 3]}
+warp:
+  scenarios: [V2, V4]
+  N_list: [300, 1000]
+  rep_range: [0, 3]
+  estimators: {V2: [twopl], V4: [twopl, free1]}
+cost_model_sec: {fit: 900, warp_twopl: 900, warp_free1: 400}
+budget: {max_cpu_hours: 12, enforce_cpu_cap: true, workers: 18, max_wall_minutes: 300}

@@ -4,6 +4,23 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H4: Stage 1 built and piloted -> Opus review; two escalations (2026-10-09)
+
+```text
+MODEL HANDOFF — Experiment 4 pilot finished; escalation R5 (non-convergence at the iteration cap; projected cost above 150 CPU-h)
+Completed (Sonnet 5.5, .venv12, single-thread BLAS, owner's PC): discrimination_free/ estimator, null bootstrap, warp job, runner, summarize; 10 new tests (pass);
+  pilot 24/24 ok (7.75 CPU-h, 40 min); docs/experiment_04_pilot_report.md (numbers only); X4-F07..F10.
+Headline (3 reps/cell; indicative): 2PL and 1PL-free both near sigma2_F* (errors within +-0.011); lambda recovery RMSE 0.15 (N = 1000) / 0.24-0.30 (N = 300).
+ESCALATION 1 (X4-F09): 2PL B2 hits the 3000-iteration cap in 2/12 recovery fits and 4/18 warp fits (optimum reached to ~0.01 log-lik; B1 needs ~1,800-1,900 iterations).
+  Question for Opus: raise fit.max_iter for the 2PL estimator (e.g. 8000) and re-pilot the non-converged cells, or accept? Not changed by Sonnet.
+ESCALATION 2 (X4-F10): protocol matrix projects to ~163 CPU-h (cap 150); 2PL fits cost 3-4x 1PL-free. Options priced in the pilot report (75 warp datasets per N -> ~128 h).
+For Opus: (1) decide max_iter and the cost-saving option; (2) write and freeze the confirmatory hypotheses/rules (PH4a-PH4e, power, gates incl. non-convergence share);
+  (3) check the heavy cases (V5 N = 300 2PL lambda RMSE 0.30; extreme-lambda items).
+Next task (Opus 5.5, Plan Mode): review, matrix decision, freeze plan. Git: the owner runs it. Resume: `Switched to Opus; review pilot`.
+```
+
+---
+
 ## MODEL HANDOFF — H3: Stage-0 gate passed -> Sonnet builds the 2PL estimator and runs the pilot (2026-10-09)
 
 ```text

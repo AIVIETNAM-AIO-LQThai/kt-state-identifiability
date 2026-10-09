@@ -1,0 +1,13 @@
+time 589 s max_iter 3000
+B1 ok [] selected msg: CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+   start ok True conv True nit 1784 neval 2062 ll -2102778.940 | CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+   start ok True conv True nit 1913 neval 2212 ll -2102778.940 | CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+   start ok True conv True nit 1802 neval 2102 ll -2102778.940 | CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+   start ok True conv True nit 1913 neval 2213 ll -2102778.940 | CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+   start ok True conv True nit 1876 neval 2186 ll -2102778.940 | CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH
+B2 flagged ['not_converged'] selected msg: STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT
+   start ok True conv False nit 3000 neval 3493 ll -2102687.130 | STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT
+   start ok True conv False nit 3000 neval 3456 ll -2102686.993 | STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT
+   start ok True conv False nit 3000 neval 3466 ll -2102686.993 | STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT
+   start ok True conv False nit 3000 neval 3463 ll -2102686.993 | STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT
+   start ok True conv False nit 3000 neval 3467 ll -2102686.993 | STOP: TOTAL NO. OF ITERATIONS REACHED LIMIT
