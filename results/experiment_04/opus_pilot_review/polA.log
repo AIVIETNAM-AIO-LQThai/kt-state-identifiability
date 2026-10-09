@@ -1,0 +1,102 @@
+{"start": 0, "nit": 3000, "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI", "ll": -2102687.1300784666, "sec": 77.38120579719543, "polish_ll": -2102686.9927128963, "polish_dec": 5.8678265265611335e-09, "polish_steps": 3, "polish_sec": 14.461987972259521, "sigma2_F": 0.1426985430246247, "tau_F": 11.41080121023635, "sigma2_F_lbfgs": 0.141214935854172}
+{"start": 1, "nit": 3000, "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI", "ll": -2102686.9933399456, "sec": 74.60042810440063, "polish_ll": -2102686.9927128907, "polish_dec": 3.4854793386554214e-11, "polish_steps": 3, "polish_sec": 15.18669867515564, "sigma2_F": 0.1426973743230347, "tau_F": 11.410901545385846, "sigma2_F_lbfgs": 0.14294305955204087}
+{"start": 2, "nit": 3000, "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI", "ll": -2102686.9928332604, "sec": 77.01130723953247, "polish_ll": -2102686.9927128954, "polish_dec": 4.519764772577368e-09, "polish_steps": 2, "polish_sec": 9.807626962661743, "sigma2_F": 0.142696854475613, "tau_F": 11.410936946746997, "sigma2_F_lbfgs": 0.14274458537052753}
+{"start": 3, "nit": 3000, "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI", "ll": -2102686.9927793667, "sec": 78.27304530143738, "polish_ll": -2102686.9927129056, "polish_dec": 1.5131482249909606e-08, "polish_steps": 2, "polish_sec": 10.350847005844116, "sigma2_F": 0.14269693812535525, "tau_F": 11.410928422675628, "sigma2_F_lbfgs": 0.14278052859030044}
+{"start": 4, "nit": 3000, "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI", "ll": -2102686.993000373, "sec": 75.53128004074097, "polish_ll": -2102686.9927128907, "polish_dec": 2.0204444329668188e-13, "polish_steps": 3, "polish_sec": 15.041810750961304, "sigma2_F": 0.14269743848990224, "tau_F": 11.410896610620643, "sigma2_F_lbfgs": 0.14267918426227427}
+{
+ "case": "A",
+ "B1": {
+  "ll": -2102778.939999094,
+  "conv": true,
+  "dec": 1.3676603809680692e-06,
+  "sec": 256.8544363975525
+ },
+ "B1_polish": {
+  "step": 1,
+  "ll": -2102778.939997726,
+  "dec": 8.981277031797281e-15,
+  "min_eig": 117.66859659595686,
+  "damped": false
+ },
+ "B2_starts": [
+  {
+   "start": 0,
+   "nit": 3000,
+   "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI",
+   "ll": -2102687.1300784666,
+   "sec": 77.38120579719543,
+   "polish_ll": -2102686.9927128963,
+   "polish_dec": 5.8678265265611335e-09,
+   "polish_steps": 3,
+   "polish_sec": 14.461987972259521,
+   "sigma2_F": 0.1426985430246247,
+   "tau_F": 11.41080121023635,
+   "sigma2_F_lbfgs": 0.141214935854172
+  },
+  {
+   "start": 1,
+   "nit": 3000,
+   "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI",
+   "ll": -2102686.9933399456,
+   "sec": 74.60042810440063,
+   "polish_ll": -2102686.9927128907,
+   "polish_dec": 3.4854793386554214e-11,
+   "polish_steps": 3,
+   "polish_sec": 15.18669867515564,
+   "sigma2_F": 0.1426973743230347,
+   "tau_F": 11.410901545385846,
+   "sigma2_F_lbfgs": 0.14294305955204087
+  },
+  {
+   "start": 2,
+   "nit": 3000,
+   "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI",
+   "ll": -2102686.9928332604,
+   "sec": 77.01130723953247,
+   "polish_ll": -2102686.9927128954,
+   "polish_dec": 4.519764772577368e-09,
+   "polish_steps": 2,
+   "polish_sec": 9.807626962661743,
+   "sigma2_F": 0.142696854475613,
+   "tau_F": 11.410936946746997,
+   "sigma2_F_lbfgs": 0.14274458537052753
+  },
+  {
+   "start": 3,
+   "nit": 3000,
+   "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI",
+   "ll": -2102686.9927793667,
+   "sec": 78.27304530143738,
+   "polish_ll": -2102686.9927129056,
+   "polish_dec": 1.5131482249909606e-08,
+   "polish_steps": 2,
+   "polish_sec": 10.350847005844116,
+   "sigma2_F": 0.14269693812535525,
+   "tau_F": 11.410928422675628,
+   "sigma2_F_lbfgs": 0.14278052859030044
+  },
+  {
+   "start": 4,
+   "nit": 3000,
+   "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI",
+   "ll": -2102686.993000373,
+   "sec": 75.53128004074097,
+   "polish_ll": -2102686.9927128907,
+   "polish_dec": 2.0204444329668188e-13,
+   "polish_steps": 3,
+   "polish_sec": 15.041810750961304,
+   "sigma2_F": 0.14269743848990224,
+   "tau_F": 11.410896610620643,
+   "sigma2_F_lbfgs": 0.14267918426227427
+  }
+ ],
+ "B2_start0_maxiter30000": {
+  "nit": 4773,
+  "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ",
+  "ll": -2102686.992724399,
+  "sec": 119.75180649757385,
+  "conv": true
+ },
+ "T_lbfgs": 183.89443945419043,
+ "T_polished": 183.8945696707815
+}

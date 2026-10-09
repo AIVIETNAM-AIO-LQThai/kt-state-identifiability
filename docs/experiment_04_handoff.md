@@ -4,6 +4,25 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H5: pilot reviewed -> Sonnet implements the polish, re-pilots, writes the rules and freezes (2026-10-09)
+
+```text
+MODEL HANDOFF — Experiment 4 Stage 2 implementation (stop before the confirmatory run)
+Completed (Opus): pilot review X4-F11 (iteration cap: Newton polish fixes it; white-noise ridge), X4-F12 (rule power), X4-D08 (decisions; owner set cap 200 CPU-h).
+Next task (Sonnet 5.5; High for the polish):
+  1. R6 polish for 2PL only (X4-D08 (1)); tests: polish from a max_iter = 200 truncated fit reaches decrement < 1e-6; cap-stopped but certified start counts as
+     converged; start agreement on polished values; 1PL-free output bit-identical to difficulty_free.fit.fit_free; ridge flag. Full pytest (X3-F06 known).
+  2. Re-pilot: configs/experiment_04/stage_pilot2.yaml (pilot matrix, seed 20264001). Gate: no non-converged 2PL fit except <= 1 of 30 B2 fits certified on the ridge.
+     Report polish counts and the new cost model. If the gate fails: STOP and escalate.
+  3. discrimination_free/rules.py (PH4a-PH4e, G1/G2, X4-D08 (4)) wired into summarize; rule tests on synthetic summaries.
+  4. configs/experiment_04/stage_confirmatory.yaml (X4-D08 (3); seed 20264101; cap 200 enforced; rep-major order in runner.expand_jobs; cost model from the re-pilot);
+     dry-run; trim rule if > 195 CPU-h; set frozen: true; record the sha256 (X4-D09).
+  5. STOP: no confirmatory start without the owner's explicit go-ahead on an idle machine. Records X4-F13+, handoff H6, git commands.
+Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H4: Stage 1 built and piloted -> Opus review; two escalations (2026-10-09)
 
 ```text

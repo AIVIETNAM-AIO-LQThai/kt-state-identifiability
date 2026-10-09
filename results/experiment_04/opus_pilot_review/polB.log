@@ -1,0 +1,102 @@
+{"start": 0, "nit": 3000, "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI", "ll": -6885967.768787201, "sec": 81.34306502342224, "polish_ll": -6885967.753657308, "polish_dec": 0.0007081069160153187, "polish_steps": 8, "polish_sec": 43.09439730644226, "sigma2_F": 0.5513813518459951, "tau_F": 0.2069455340866288, "sigma2_F_lbfgs": 0.49044642689093104}
+{"start": 1, "nit": 1120, "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ", "ll": -6885968.3496013945, "sec": 29.632271766662598, "polish_ll": -6885968.346336169, "polish_dec": 0.0001420665675719735, "polish_steps": 8, "polish_sec": 40.146599531173706, "sigma2_F": 0.00960809156026929, "tau_F": 1.6429376287318889, "sigma2_F_lbfgs": 0.008793518674523923}
+{"start": 2, "nit": 886, "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ", "ll": -6885968.537611688, "sec": 22.31463646888733, "polish_ll": -6885968.537609398, "polish_dec": 5.3771478170906e-15, "polish_steps": 2, "polish_sec": 10.165963888168335, "sigma2_F": 0.0, "tau_F": 7.972356175711068, "sigma2_F_lbfgs": 0.0}
+{"start": 3, "nit": 892, "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ", "ll": -6885968.537611205, "sec": 21.670932292938232, "polish_ll": -6885968.537609398, "polish_dec": 1.5193520882492805e-15, "polish_steps": 2, "polish_sec": 9.668891906738281, "sigma2_F": 0.0, "tau_F": 29.832189529668295, "sigma2_F_lbfgs": 0.0}
+{"start": 4, "nit": 876, "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ", "ll": -6885968.537610352, "sec": 21.635383129119873, "polish_ll": -6885968.537609398, "polish_dec": 2.9095187477724277e-16, "polish_steps": 2, "polish_sec": 9.792544841766357, "sigma2_F": 0.0, "tau_F": 119.79900668973796, "sigma2_F_lbfgs": 0.0}
+{
+ "case": "B",
+ "B1": {
+  "ll": -6885968.537610834,
+  "conv": true,
+  "dec": 1.4367818700903033e-06,
+  "sec": 147.8418619632721
+ },
+ "B1_polish": {
+  "step": 1,
+  "ll": -6885968.537609398,
+  "dec": 4.2013584022947394e-16,
+  "min_eig": 730.9838036305392,
+  "damped": false
+ },
+ "B2_starts": [
+  {
+   "start": 0,
+   "nit": 3000,
+   "msg": "STOP: TOTAL NO. OF ITERATIONS REACHED LI",
+   "ll": -6885967.768787201,
+   "sec": 81.34306502342224,
+   "polish_ll": -6885967.753657308,
+   "polish_dec": 0.0007081069160153187,
+   "polish_steps": 8,
+   "polish_sec": 43.09439730644226,
+   "sigma2_F": 0.5513813518459951,
+   "tau_F": 0.2069455340866288,
+   "sigma2_F_lbfgs": 0.49044642689093104
+  },
+  {
+   "start": 1,
+   "nit": 1120,
+   "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ",
+   "ll": -6885968.3496013945,
+   "sec": 29.632271766662598,
+   "polish_ll": -6885968.346336169,
+   "polish_dec": 0.0001420665675719735,
+   "polish_steps": 8,
+   "polish_sec": 40.146599531173706,
+   "sigma2_F": 0.00960809156026929,
+   "tau_F": 1.6429376287318889,
+   "sigma2_F_lbfgs": 0.008793518674523923
+  },
+  {
+   "start": 2,
+   "nit": 886,
+   "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ",
+   "ll": -6885968.537611688,
+   "sec": 22.31463646888733,
+   "polish_ll": -6885968.537609398,
+   "polish_dec": 5.3771478170906e-15,
+   "polish_steps": 2,
+   "polish_sec": 10.165963888168335,
+   "sigma2_F": 0.0,
+   "tau_F": 7.972356175711068,
+   "sigma2_F_lbfgs": 0.0
+  },
+  {
+   "start": 3,
+   "nit": 892,
+   "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ",
+   "ll": -6885968.537611205,
+   "sec": 21.670932292938232,
+   "polish_ll": -6885968.537609398,
+   "polish_dec": 1.5193520882492805e-15,
+   "polish_steps": 2,
+   "polish_sec": 9.668891906738281,
+   "sigma2_F": 0.0,
+   "tau_F": 29.832189529668295,
+   "sigma2_F_lbfgs": 0.0
+  },
+  {
+   "start": 4,
+   "nit": 876,
+   "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ",
+   "ll": -6885968.537610352,
+   "sec": 21.635383129119873,
+   "polish_ll": -6885968.537609398,
+   "polish_dec": 2.9095187477724277e-16,
+   "polish_steps": 2,
+   "polish_sec": 9.792544841766357,
+   "sigma2_F": 0.0,
+   "tau_F": 119.79900668973796,
+   "sigma2_F_lbfgs": 0.0
+  }
+ ],
+ "B2_start0_maxiter30000": {
+  "nit": 8488,
+  "msg": "CONVERGENCE: RELATIVE REDUCTION OF F <= ",
+  "ll": -6885967.712446452,
+  "sec": 219.41761779785156,
+  "conv": true
+ },
+ "T_lbfgs": 1.5376472678035498,
+ "T_polished": 1.5679041799157858
+}
