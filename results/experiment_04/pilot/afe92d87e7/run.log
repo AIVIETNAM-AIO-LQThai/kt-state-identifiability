@@ -1,0 +1,28 @@
+stage=pilot config_hash=afe92d87e752 results_dir=results\experiment_04\pilot\afe92d87e7
+jobs: {'fit': 12, 'warp': 12}  estimated 6.67 CPU-h, ~22 min on 18 workers
+24 jobs to run (0 already valid/recorded)
+  fit__V1__N1000__r0 ok 868s [1 run, 0 error, 14.5 min]
+  warp__V2__N1000__r1 ok 882s [2 run, 0 error, 14.7 min]
+  fit__V5__N300__r1 ok 894s [3 run, 0 error, 14.9 min]
+  fit__V5__N1000__r0 ok 937s [4 run, 0 error, 15.6 min]
+  fit__V1__N1000__r1 ok 940s [5 run, 0 error, 15.7 min]
+  fit__V1__N1000__r2 ok 958s [6 run, 0 error, 16.0 min]
+  fit__V1__N300__r2 ok 965s [7 run, 0 error, 16.1 min]
+  fit__V5__N1000__r2 ok 976s [8 run, 0 error, 16.3 min]
+  fit__V1__N300__r1 ok 1003s [9 run, 0 error, 16.7 min]
+  fit__V5__N1000__r1 ok 1011s [10 run, 0 error, 16.9 min]
+  fit__V1__N300__r0 ok 1046s [11 run, 0 error, 17.5 min]
+  warp__V2__N300__r2 ok 1151s [12 run, 0 error, 19.2 min]
+  warp__V2__N1000__r0 ok 1211s [13 run, 0 error, 20.2 min]
+  warp__V2__N1000__r2 ok 1216s [14 run, 0 error, 20.3 min]
+  warp__V2__N300__r1 ok 1247s [15 run, 0 error, 20.8 min]
+  fit__V5__N300__r0 ok 1415s [16 run, 0 error, 23.6 min]
+  fit__V5__N300__r2 ok 1426s [17 run, 0 error, 23.8 min]
+  warp__V2__N300__r0 ok 1535s [18 run, 0 error, 25.6 min]
+  warp__V4__N1000__r0 ok 1022s [19 run, 0 error, 32.7 min]
+  warp__V4__N300__r0 ok 1135s [20 run, 0 error, 33.4 min]
+  warp__V4__N1000__r2 ok 1046s [21 run, 0 error, 33.4 min]
+  warp__V4__N300__r1 ok 1251s [22 run, 0 error, 35.6 min]
+  warp__V4__N300__r2 ok 1302s [23 run, 0 error, 36.6 min]
+  warp__V4__N1000__r1 ok 1263s [24 run, 0 error, 36.7 min]
+stage pilot finished: {'done_before': 0, 'ran': 24, 'error': 0}

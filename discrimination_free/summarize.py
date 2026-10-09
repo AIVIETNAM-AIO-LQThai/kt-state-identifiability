@@ -15,7 +15,7 @@ def _mean(v):
     return float(np.mean(v)) if v else None
 
 
-def summarize(results_dir: str) -> dict:
+def summarize(results_dir: str, with_rules: bool = False) -> dict:
     rd = Path(results_dir)
     envs = [read_json(Path(f)) for f in sorted(glob.glob(str(rd / "jobs" / "*.json")))]
     ok = [e for e in envs if e["status"] == "ok"]
@@ -60,12 +60,18 @@ def summarize(results_dir: str) -> dict:
         w["job_seconds"].append(e["runtime"])
         for est in ("twopl", "free1"):
             if est in r:
-                w["estimators"].setdefault(est, []).append({k: r[est].get(k) for k in ("T", "T_star", "sigma2_F", "tau_F", "converged", "fit_failed", "star_failed", "runtime_fit", "runtime_star")})
+                w["estimators"].setdefault(est, []).append({k: r[est].get(k) for k in ("T", "T_star", "sigma2_F", "tau_F", "converged", "fit_failed", "star_failed", "runtime_fit", "runtime_star", "star_converged", "sigma2_F_star_boot", "tau_F_star")})
     summary = {"manifest": {k: man.get(k) for k in ("stage", "config_hash", "code_hash", "git", "env")},
                "accounting": {"jobs": len(envs), "ok": len(ok), "errors": len(envs) - len(ok)},
                "cpu_hours": float(sum(e["runtime"] for e in envs) / 3600.0), "cells": out_cells, "warp": warp_cells}
     write_json_atomic(rd / "summary.json", summary)
-    (rd / "summary.md").write_text(_markdown(summary), encoding="utf-8")
+    md = _markdown(summary)
+    if with_rules:
+        from . import rules
+        R = rules.evaluate(rd)
+        write_json_atomic(rd / "rules.json", R)
+        md += "\n" + "\n".join(rules.markdown(R))
+    (rd / "summary.md").write_text(md, encoding="utf-8")
     return summary
 
 

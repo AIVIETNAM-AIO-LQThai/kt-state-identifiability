@@ -30,6 +30,7 @@ def main(argv=None) -> int:
     r.add_argument("--frozen-sha256", default=None)
     sm = sub.add_parser("summarize")
     sm.add_argument("--results", required=True)
+    sm.add_argument("--rules", action="store_true")
     args = ap.parse_args(argv)
     if args.cmd == "run":
         from .runner import run_stage
@@ -37,7 +38,7 @@ def main(argv=None) -> int:
                          allow_mismatch=args.allow_mismatch, frozen_sha256=args.frozen_sha256)
     if args.cmd == "summarize":
         from .summarize import summarize
-        summarize(args.results)
+        summarize(args.results, with_rules=args.rules)
         print("wrote summary.json / summary.md in", args.results)
         return 0
     from kt_trial.config import load_scenario, load_yaml

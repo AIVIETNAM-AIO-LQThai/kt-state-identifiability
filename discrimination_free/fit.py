@@ -15,10 +15,40 @@ from kt_trial.schedule import Template
 from difficulty_free.model import start_difficulties
 
 from .model import Objective2PL, Param2PL
+from .polish import newton_polish
 
 B_JITTER_SD = 0.05
 W_JITTER_SD = 0.05
 EXTREME_LOG_LAMBDA = float(np.log(4.0))
+
+
+POLISH_WINDOW = 1.0          # log-lik units below the best start within which a start that did not end in CONVERGENCE is polished
+RIDGE_TAU_F = 0.4
+
+
+def polish_starts(pm: Param2PL, obj: Objective2PL, runs: list[dict], cfg_fit: dict) -> None:
+    """R6 (X4-D08), in place: Newton-polish every start that did not end with CONVERGENCE and lies within POLISH_WINDOW of the best,
+    and always the best. A polished start is converged if its D22 certificate passes (decrement <= newton_tol, Hessian PD)."""
+    ok = [r for r in runs if r["ok"] and np.isfinite(r["ll"])]
+    if not ok:
+        return
+    best_ll = max(r["ll"] for r in ok)
+    best_run = max(ok, key=lambda r: r["ll"])
+    for r in ok:
+        r["polished"] = False
+        if r is best_run or (not r["converged"] and r["ll"] >= best_ll - POLISH_WINDOW):
+            p = newton_polish(pm, obj, np.array(r["x"]), cfg_fit)
+            r.update(polished=True, polish_steps=p["steps"], polish_dll=p["ll"] - r["ll"], polish_line_search_failed=p["line_search_failed"],
+                     polish_decrement=p["decrement"], polish_not_pd=p["hessian_not_pd"], n_iter_lbfgs=r["n_iter"])
+            if p["ll"] >= r["ll"] - 1e-9:
+                r.update(x=p["x"].tolist(), ll=p["ll"])
+            if not r["converged"] and not p["hessian_not_pd"] and p["decrement"] <= cfg_fit["newton_tol"]:
+                r["converged"] = True
+                r["message"] = r["message"] + " | converged by Newton polish"
+
+
+def ridge_flag(model: str, theta: Theta, tol: float) -> bool:
+    return model == "B2" and theta.sigma2_F > tol and theta.tau_F < RIDGE_TAU_F
 
 
 def fit_2pl(model: str, templates: list[Template], pc: PairCounts, cfg_fit: dict, K: int, ids: np.ndarray, n_items: int,
@@ -38,6 +68,7 @@ def fit_2pl(model: str, templates: list[Template], pc: PairCounts, cfg_fit: dict
         wj = w0 if i == 0 else w0 + rng.normal(0.0, W_JITTER_SD, size=w0.shape)
         starts.append(np.clip(np.concatenate([xt, bj, wj]), pm.lb, pm.ub))
     runs = [_one_start(obj, x0, cfg_fit) for x0 in starts]
+    polish_starts(pm, obj, runs, cfg_fit)
     good = [r for r in runs if r["ok"] and np.isfinite(r["ll"])]
     out = dict(model=model, arm="2pl", n_params=pm.n, N=pc.N, runs=[{k: v for k, v in r.items() if k != "x"} for r in runs],
                flags=[], seed_keys=[str(k) for k in seed_keys])
@@ -83,6 +114,9 @@ def fit_2pl(model: str, templates: list[Template], pc: PairCounts, cfg_fit: dict
         flags.append("secondary_optima_present")
     if model == "B2" and theta.sigma2_F <= tol:
         flags.append("tau_F_not_identified(sigma2_F=0)")
+    if ridge_flag(model, theta, tol):
+        flags.append("white_noise_ridge")
+    n_pol = sum(bool(r.get("polished")) for r in good)
     lam = pm.lam(x)
     n_ext = int((np.abs(np.log(lam)) > EXTREME_LOG_LAMBDA).sum())
     if n_ext > 0.05 * n_items:
@@ -92,5 +126,6 @@ def fit_2pl(model: str, templates: list[Template], pc: PairCounts, cfg_fit: dict
                ll=float(best["ll"]), grad_inf_abs=best["grad_inf"], certificate=cert, converged=bool(best["converged"]),
                message=best["message"], boundary_hits=hits, flags=flags, n_starts=len(starts), n_good_starts=len(good),
                start_agreement={"n_starts_at_best": int(at_best.sum()), "secondary_optima": int(secondary.sum()), "ll_range": float(lls.max() - lls.min())},
+               n_polished=n_pol, polish_line_search_failures=int(sum(bool(r.get("polish_line_search_failed")) for r in good)),
                runtime=time.time() - t0)
     return out

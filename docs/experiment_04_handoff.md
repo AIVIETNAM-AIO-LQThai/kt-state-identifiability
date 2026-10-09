@@ -4,6 +4,22 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H6: polish and rules built; re-pilot gate not strictly met -> Opus (2026-10-09)
+
+```text
+MODEL HANDOFF — Experiment 4: ESCALATION before the freeze
+Completed (Sonnet 5.5): R6 polish, rules.py (PH4a-PH4e, G1-G3), tests (all pass; X3-F06 only), re-pilot 24/24 ok (7.42 CPU-h); X4-F13; docs/experiment_04_repilot_report.md.
+Result: 2PL non-converged units 6/36 -> 1/36. The one left is the ridge case V4 N = 1000 rep 1: not certified (decrement 0.0061 after 8 steps; 0.0015 after 30; tol 1e-3).
+Question for Opus (not changed by Sonnet): (a) accept as the "ridge" exception (the plan said <= 1 of 30 B2 fits certified on the ridge), (b) raise polish steps / relax the certificate on the ridge
+  (e.g. treat white_noise_ridge fits with decrement < 0.01 as converged-on-ridge, reported), or (c) change the G1 handling of ridge fits (they affect T by < 0.1). In the full run ~1/36 units -> ~3% of
+  ~500 units: under the 5% G1 limit if it stays at that rate, but the pilot has only 36 units.
+Cost: re-pilot means give ~154 CPU-h for the X4-D08 matrix (cap 200; trim threshold 195 not triggered).
+Not done (waiting for the decision): stage_confirmatory.yaml, rep-major job order in expand_jobs, freeze (X4-D09).
+Next (Opus 5.5, Plan Mode): decide (a)-(c); then Sonnet writes/freeze the confirmatory config. Git: the owner runs it. Resume: `Switched to Opus; review re-pilot`.
+```
+
+---
+
 ## MODEL HANDOFF — H5: pilot reviewed -> Sonnet implements the polish, re-pilots, writes the rules and freezes (2026-10-09)
 
 ```text

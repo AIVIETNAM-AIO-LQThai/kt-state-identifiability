@@ -180,3 +180,38 @@ def test_runner_end_to_end_resume_refusal_cap_and_summary(tmp_path):
     assert S["accounting"]["errors"] == 0 and "V5|N=150" in S["cells"] and "V4|N=150" in S["warp"] and (rd / "summary.md").exists()
     capped = dict(st, budget={"max_cpu_hours": 1e-9, "enforce_cpu_cap": True, "workers": 1}); p2 = tmp_path / "cap.yaml"; p2.write_text(yaml.safe_dump(capped))
     assert runner.run_stage(p2, results_root=str(tmp_path / "res2"), workers=1, out=msgs.append) in (0, 5)
+
+
+# ---------------------------------------------------------------- R6 Newton polish (X4-D08)
+def test_polish_reaches_certificate_from_truncated_fit(cfg, templates, theta, ids, b_true, data):
+    from kt_trial.fit import _one_start, newton_certificate
+    from discrimination_free.polish import newton_polish
+    ds, pc = data
+    pm = Param2PL("B1", 4, NI); ob = Objective2PL(pm, templates, pc, ids)
+    x0 = pm.pack(theta, b_true)
+    r = _one_start(ob, x0, dict(cfg["fit"], max_iter=200))
+    assert not r["converged"] and r["message"].startswith("STOP")
+    p = newton_polish(pm, ob, np.array(r["x"]), cfg["fit"])
+    assert p["ll"] >= r["ll"] and p["decrement"] < 1e-6 and not p["hessian_not_pd"]
+    cert = newton_certificate(pm, ob, p["x"], pm.x_to_theta(p["x"]), cfg["fit"])
+    assert cert["newton_decrement"] < 1e-5 and not cert["hessian_not_pd"]
+
+
+def test_cap_stopped_but_certified_start_counts_as_converged_and_agreement_uses_polished_values(cfg, templates, theta, ids, b_true, data):
+    from discrimination_free.fit import fit_2pl
+    ds, pc = data
+    f = fit_2pl("B1", templates, pc, dict(cfg["fit"], max_iter=200, n_starts=2), 4, ids, NI, ("cap",), 31)
+    assert f["status"] == "ok" and f["converged"] and f["n_polished"] >= 1
+    assert any("Newton polish" in (r.get("message") or "") for r in f["runs"])
+    assert any(r.get("polished") and r["polish_dll"] >= 0 for r in f["runs"])
+    assert f["certificate"]["newton_decrement"] <= cfg["fit"]["newton_tol"]
+
+
+def test_ridge_flag_and_free1_is_experiment3_estimator():
+    from discrimination_free import jobs
+    from discrimination_free.fit import ridge_flag
+    import difficulty_free.fit as dff
+    th = Theta.from_dict({**__import__("kt_trial.config", fromlist=["x"]).generating_theta_dict(__import__("kt_trial.config", fromlist=["x"]).load_scenario("S1"))})
+    assert ridge_flag("B2", th.copy(sigma2_F=0.3, tau_F=0.2), 1e-6) and not ridge_flag("B2", th.copy(sigma2_F=0.3, tau_F=5.0), 1e-6)
+    assert not ridge_flag("B2", th.copy(sigma2_F=0.0, tau_F=0.2), 1e-6) and not ridge_flag("B1", th.copy(sigma2_F=0.3, tau_F=0.2), 1e-6)
+    assert jobs.fit_free is dff.fit_free

@@ -40,7 +40,7 @@ def _lambda_recovery(lam_hat, lam_true) -> dict:
 
 def _summ(f: dict, tr: dict, b_true) -> dict:
     keep = ("model", "arm", "status", "ll", "runtime", "flags", "certificate", "start_agreement", "boundary_hits", "converged", "n_params",
-            "n_starts", "n_good_starts", "n_extreme_lambda")
+            "n_starts", "n_good_starts", "n_extreme_lambda", "n_polished", "polish_line_search_failures")
     out = {k: f[k] for k in keep if k in f}
     if f.get("status") != "failed":
         out["theta"] = f["theta"]
@@ -121,6 +121,7 @@ def run_warp_job(stage: dict, sid: str, N: int, rep: int) -> dict:
                      converged=bool(f1["converged"] and f2["converged"]), runtime_fit=f1["runtime"] + f2["runtime"])
             e["star_failed"] = bool(star.get("failed"))
             if not e["star_failed"]:
-                e.update(T_star=star["clr"], sigma2_F_star_boot=star["sigma2_F"], tau_F_star=star["tau_F"], runtime_star=star["runtime"])
+                e.update(T_star=star["clr"], sigma2_F_star_boot=star["sigma2_F"], tau_F_star=star["tau_F"], runtime_star=star["runtime"],
+                         star_converged=bool(star.get("converged", "not_converged" not in star["flags2"])))
         out[est] = e
     return out
