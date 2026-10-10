@@ -4,6 +4,26 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H5: pilot accepted, rules frozen -> Sonnet freezes the confirmatory config (2026-10-10)
+
+```text
+MODEL HANDOFF — Experiment 5 freeze (stop before the confirmatory run)
+Completed (Opus 5.5): pilot review X5-F06; X5-D07 (matrix as X5-D06, cap 210 CPU-h set by the owner, H5a thresholds, frozen rules, operating characteristics).
+Next task (Sonnet 5.5):
+  1. rules.py: H5a verdict (E3 N = 1000 primary: CP lower > 0.5 -> supported, CP upper < 0.5 -> not supported, else inconclusive; E3 N = 300
+     secondary; E4 descriptive); tau_R-at-bound and near-white (tau_F-hat < 0.4) shares in _fit_summary; frozen_rules_version "X5-D06+D07";
+     a test of the H5a branches on synthetic envelopes; full suite (X3-F06 known).
+  2. configs/experiment_05/stage_confirmatory.yaml: stage confirmatory, frozen: true, seed 20265101; fit E1, E2 [0, 75], E3, E5 [0, 30], E6 [0, 50];
+     warp E4 [0, 50]; N [300, 1000]; job_order rep_major; taus_x [2, 5, 10]; null_reference and stage0_summary as in the pilot;
+     cost_model_sec {E1: 1023, E2: 993, E3: 1351, E4: 1715, E5: 1296, E6: 652, default: 1351}; budget 210 CPU-h enforced, 18 workers, no wall limit.
+  3. Dry-run (expect ~194 CPU-h; trim order only if > 205); record sha256 and code hash as X5-D08; check the wrong-sha refusal.
+  4. Records X5-F07, X5-D08, handoff H6 with the exact run command. Remind the owner to commit before starting (clean manifest).
+  5. STOP: no confirmatory start without the owner's explicit go-ahead on an idle machine.
+Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H4: pilot done -> Opus pilot review and freeze decisions (2026-10-10)
 
 ```text
