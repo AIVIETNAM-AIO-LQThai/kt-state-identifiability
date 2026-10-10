@@ -4,6 +4,23 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H6: confirmatory config frozen -> owner go-ahead, then run, then Opus (2026-10-10)
+
+```text
+MODEL HANDOFF — Experiment 5: READY TO RUN (not started)
+Completed (Sonnet 5.5): H5a verdict and extra descriptives in rules.py (X5-F07), full suite passes except X3-F06, stage_confirmatory.yaml frozen (X5-D08), dry-run 193.87 CPU-h (~646 min / 18 workers), wrong-sha refusal checked.
+Frozen sha256: 64a7b40214d60409ae067e7b62975b9bbe0c4a7d952c0ca6ebb59eade2b730ee
+Code hash at freeze: 70990fcf9fa7eda7fdbd9beaffc194b6f4bf6a6fd22540153aa5e829897946fe
+Before starting: COMMIT the code and config (so the manifest is not dirty); idle machine; .venv12; run from this working copy (LF line endings, the sha is of the working-copy file).
+Command (owner, repo root):
+  $env:OMP_NUM_THREADS=1; $env:OPENBLAS_NUM_THREADS=1; $env:MKL_NUM_THREADS=1
+  & "C:\Users\Dell ProMax Tower T2\Downloads\code\.venv12\Scripts\python.exe" -m state_dependence run --config configs/experiment_05/stage_confirmatory.yaml --frozen-sha256 64a7b40214d60409ae067e7b62975b9bbe0c4a7d952c0ca6ebb59eade2b730ee
+Resumable (re-run the same command); cap 210 CPU-h enforced. Afterwards: python -m state_dependence summarize --results results/experiment_05/confirmatory/5a3afdf728 --rules
+Next: owner's explicit go-ahead -> run (the owner, or Sonnet on request) -> Sonnet audits and summarizes -> Opus 5.5 (Plan Mode) interprets H5a-H5e. Resume after the run: `Switched to Opus; interpret results`.
+```
+
+---
+
 ## MODEL HANDOFF — H5: pilot accepted, rules frozen -> Sonnet freezes the confirmatory config (2026-10-10)
 
 ```text

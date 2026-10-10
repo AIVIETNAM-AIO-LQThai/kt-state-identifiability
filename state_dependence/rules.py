@@ -152,7 +152,7 @@ def evaluate(results_dir) -> dict:
     g1 = lambda sid, Ns=NS: all(gates.get(f"G1 {sid} N={N}", {"ok": False})["ok"] for N in Ns)
 
     # H5a (no verdict thresholds in X5-D06)
-    h5a = {"verdict": "descriptive (thresholds pending Opus)", "E3": {}, "E4": {}}
+    h5a = {"verdict": "not evaluable (missing cell)", "E3": {}, "E4": {}}
     for N in NS:
         T = [r["T"] for r in _cell(recs, "E3", N) if _valid(r) and r.get("T") is not None]
         if T and q95.get(N):
@@ -169,6 +169,16 @@ def evaluate(results_dir) -> dict:
             rN = _warp_rows(recs, "E4", N)
             if rN:
                 h5a["E4"][f"warp_own_T_star_N={N}"] = CAL._cell_stats(rN, seed=2 + N)
+    e3 = h5a["E3"].get("N=1000")
+    if e3 is not None:                                   # X5-D07: primary cell E3 at N = 1000; CP 95 % interval of the share of T above the reference q95
+        if not g1("E3", (1000,)):
+            h5a["verdict"] = "not evaluable (gate)"
+        elif e3["cp95"][0] > 0.5:
+            h5a["verdict"] = "supported"
+        elif e3["cp95"][1] < 0.5:
+            h5a["verdict"] = "not supported"
+        else:
+            h5a["verdict"] = "inconclusive"
     R["rules"]["H5a"] = h5a
 
     # H5b
@@ -222,7 +232,7 @@ def evaluate(results_dir) -> dict:
     D["eta_hat_mean"] = {f"{sid} N={N}": float(np.mean([r["diag"]["B2"]["by_tau_x"][PRIMARY_TAU]["eta_hat"] for r in _cell(recs, sid, N) if _valid(r)]))
                          for sid in cells for N in NS if any(_valid(r) for r in _cell(recs, sid, N))}
     D["fit_summary"] = {f"{sid} N={N}": _fit_summary(_cell(recs, sid, N)) for sid in cells for N in NS if _cell(recs, sid, N)}
-    R["frozen_rules_version"] = "X5-D06 (provisional)"
+    R["frozen_rules_version"] = "X5-D06+D07"
     return R
 
 
@@ -235,6 +245,8 @@ def _fit_summary(rs) -> dict:
             "tau_F_median": float(np.median([f["theta"]["tau_F"] for f in b2])),
             "tau_F_at_bound": int(sum(f["theta"]["tau_F"] >= BOUND_TAU_F for f in b2)),
             "T_median": float(np.median([r["T"] for r in rs if r.get("T") is not None])) if any(r.get("T") is not None for r in rs) else None,
+            "tau_R_at_upper_bound": int(sum("boundary:tau_R@upper" in f["flags"] for f in b2)),
+            "near_white_tau_F_lt_0.4": int(sum(f["theta"]["sigma2_F"] > 1e-6 and f["theta"]["tau_F"] < 0.4 for f in b2)),
             "ridge_converged_B2": int(sum("converged_on_ridge" in f["flags"] for f in b2)),
             "not_converged_B2": int(sum(not f.get("converged", False) for f in b2)),
             "polished_B1_B2": int(sum(r["arms"][m].get("n_polished", 0) for r in rs for m in ("B1", "B2") if r["arms"][m].get("status") != "failed"))}

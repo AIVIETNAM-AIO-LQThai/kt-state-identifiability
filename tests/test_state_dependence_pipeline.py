@@ -103,3 +103,28 @@ def test_runner_end_to_end_resume_refusal_and_summary(tmp_path):
     assert runner.run_stage(p, results_root=str(root), workers=2, out=msgs.append) == 3
     S = summarize(str(rd), with_rules=True)
     assert S["accounting"]["errors"] == 0 and "E5|N=150" in S["cells"] and "warp" in S["cells"]["E4|N=150"] and (rd / "rules.json").exists()
+
+
+def _ref_dir(tmp_path):
+    ref = tmp_path / "ref" / "jobs"
+    ref.mkdir(parents=True)
+    for N in rules.NS:
+        for i in range(50):
+            (ref / f"warp__V2__N{N}__r{i}.json").write_text(json.dumps({"status": "ok", "result": {"twopl": {
+                "T_star": 5.0 * i / 49.0, "star_failed": False, "star_converged": True}}}))
+    return str(tmp_path / "ref")
+
+
+def test_h5a_verdict_branches(tmp_path):
+    ref = _ref_dir(tmp_path)
+    assert abs(rules.null_q95(ref)[1000] - 4.75) < 0.05
+    for name, n_hi, want in (("sup", 30, "supported"), ("notsup", 0, "not supported"), ("inc", 15, "inconclusive")):
+        rd = tmp_path / name
+        recs = _cells(rej_level=4, rej_power=30)
+        recs = [dict(r, T=(100.0 if (r["scenario"] == "E3" and r["rep"] < n_hi) else 0.0)) if r["scenario"] == "E3" else r for r in recs]
+        _write(rd, recs)
+        man = json.loads((rd / "manifest.json").read_text()); man["stage_config"] = {"null_reference": ref}
+        (rd / "manifest.json").write_text(json.dumps(man))
+        R = rules.evaluate(rd)
+        assert R["rules"]["H5a"]["verdict"] == want, (name, R["rules"]["H5a"]["E3"])
+    assert R["frozen_rules_version"] == "X5-D06+D07" and "tau_R_at_upper_bound" in R["descriptives"]["fit_summary"]["E3 N=1000"]
