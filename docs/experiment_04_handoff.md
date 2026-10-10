@@ -4,6 +4,19 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H10: Experiment 4 CLOSED (2026-10-10)
+
+```text
+MODEL HANDOFF — Experiment 4 closed
+Completed (Opus 5.5): interpretation X4-F16, decision X4-D11 (no top-up), docs/experiment_04_final_report.md.
+Result: PH4a supported (2PL unbiased, no variance cost); PH4b and PH4c inconclusive; 2PL not shown to improve calibration (delta ~ 0);
+  the X3 "liberal" 1PL-free verdict is not replicated at its strength (0.075 vs 0.130).
+Next (owner's call): merge / open a PR for exp/discrimination-robust-recoverability, or plan a new experiment (Opus 5.5, Plan Mode).
+Git: the owner runs it.
+```
+
+---
+
 ## MODEL HANDOFF — H9: confirmatory run finished (cap stop) -> Opus interprets (2026-10-10)
 
 ```text
