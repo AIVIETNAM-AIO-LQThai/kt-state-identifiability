@@ -4,6 +4,18 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H9: confirmatory run finished (cap stop) -> Opus interprets (2026-10-10)
+
+```text
+MODEL HANDOFF — Experiment 4: INTERPRET
+Completed: owner ran the frozen confirmatory config; Sonnet audited it (X4-F15) and ran `summarize --rules` (summary.md, summary.json, rules.json in results/experiment_04/confirmatory/88d74ed991).
+Facts: 435/480 ok, 0 errors, 209.6 CPU-h (cap stop; V4 128+127 of 150+150 datasets, everything else complete); gates pass; PH4a supported; PH4b, PH4c inconclusive.
+Question for Opus: interpret PH4a-PH4e (incl. fragile-to-ridge labels, paired delta, power at R = 255), decide whether the achieved R is acceptable under the frozen rules (the rules use whatever R was achieved) or whether any further run is warranted (needs owner approval; no unplanned reruns), and write the Experiment 4 conclusion / addendum.
+Resume: `Switched to Opus; interpret results`.
+```
+
+---
+
 ## MODEL HANDOFF — H8: ridge rule implemented, config frozen -> owner go-ahead, then run, then Opus (2026-10-09)
 
 ```text
