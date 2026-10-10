@@ -1,0 +1,22 @@
+# Experiment 4 CONFIRMATORY run (X4-D08 (3), X4-D09, X4-D10). Master seed 20264101 (pilot datasets are not reused).
+# Recovery fits (V1, V5) fit 1PL-free and 2PL on the SAME datasets; warp units (V2, V4) give the observed CLR T and one bootstrap CLR T*.
+# Rule set: discrimination_free/rules.py (G1-G3, PH4a-PH4e, ridge sensitivity). Do not edit after `frozen: true`; the runner needs --frozen-sha256.
+stage: confirmatory
+frozen: true
+master_seed: 20264101
+n_starts: 5
+job_order: rep_major                          # replication-major across cells and N: a cap stop leaves the cells balanced
+scenarios:
+  - {id: V1, base: S1}                        # equal discriminations, F present (tau_F = 10)
+  - {id: V2, base: S2}                        # equal discriminations, F absent
+  - {id: V4, base: S2, lambda_cv: 0.3}        # discrimination misfit, F absent
+  - {id: V5, base: S1, lambda_cv: 0.3}        # discrimination misfit, F present
+fit: {scenarios: [V1, V5], N_list: [300, 1000], rep_range: [0, 20]}
+warp:
+  scenarios: [V2, V4]
+  N_list: [300, 1000]
+  rep_range: {V4: [0, 150], V2: [0, 50]}
+  estimators: {V2: [twopl], V4: [twopl, free1]}
+# mean seconds per job from the re-pilot (docs/experiment_04_repilot_report.md): fit 1,037; warp V2 1,207; warp V4 (2PL and 1PL-free together) 1,170
+cost_model_sec: {fit: 1037, warp_V2: 1207, warp_V4: 1170, warp_twopl: 1207, warp_free1: 400}
+budget: {max_cpu_hours: 200, enforce_cpu_cap: true, workers: 18}

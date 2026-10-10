@@ -39,14 +39,22 @@ def job_id(j: dict) -> str:
     return f"{j['kind']}__{j['scenario']}__N{j['N']}__r{j['rep']}"
 
 
+def _reps(rr, scenario):
+    """rep_range is [lo, hi) for every scenario, or a {scenario: [lo, hi)} mapping (X4-D10)."""
+    return range(*(rr[scenario] if isinstance(rr, dict) else rr))
+
+
 def expand_jobs(stage: dict) -> list[dict]:
     out = []
     f = stage.get("fit")
     if f:
-        out += [dict(kind="fit", scenario=s, N=N, rep=r) for s in f["scenarios"] for N in f["N_list"] for r in range(*f["rep_range"])]
+        out += [dict(kind="fit", scenario=s, N=N, rep=r) for s in f["scenarios"] for N in f["N_list"] for r in _reps(f["rep_range"], s)]
     w = stage.get("warp")
     if w:
-        out += [dict(kind="warp", scenario=s, N=N, rep=r) for s in w["scenarios"] for N in w["N_list"] for r in range(*w["rep_range"])]
+        out += [dict(kind="warp", scenario=s, N=N, rep=r) for s in w["scenarios"] for N in w["N_list"] for r in _reps(w["rep_range"], s)]
+    if stage.get("job_order") == "rep_major":
+        # interleave cells and N so that a cap stop leaves them balanced; stable within a replication (fit jobs, then warp V4, V2 ...)
+        out = [j for _, j in sorted(enumerate(out), key=lambda x: (x[1]["rep"], x[0]))]
     return out
 
 
@@ -61,6 +69,8 @@ def estimate_cost(stage: dict, jl: list[dict]) -> dict:
     for j in jl:
         if j["kind"] == "fit":
             cpu += c["fit"]
+        elif f"warp_{j['scenario']}" in c:                    # per-scenario mean job time (confirmatory cost model)
+            cpu += c[f"warp_{j['scenario']}"]
         else:
             cpu += sum(c[f"warp_{e}"] for e in stage["warp"].get("estimators", {}).get(j["scenario"], ["twopl"]))
     w = stage.get("budget", {}).get("workers", 4)

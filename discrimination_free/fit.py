@@ -24,6 +24,7 @@ EXTREME_LOG_LAMBDA = float(np.log(4.0))
 
 POLISH_WINDOW = 1.0          # log-lik units below the best start within which a start that did not end in CONVERGENCE is polished
 RIDGE_TAU_F = 0.4
+RIDGE_DEC_TOL = 0.01         # X4-D09: Newton-decrement bound for "converged on the ridge" (10 x newton_tol)
 
 
 def polish_starts(pm: Param2PL, obj: Objective2PL, runs: list[dict], cfg_fit: dict) -> None:
@@ -49,6 +50,11 @@ def polish_starts(pm: Param2PL, obj: Objective2PL, runs: list[dict], cfg_fit: di
 
 def ridge_flag(model: str, theta: Theta, tol: float) -> bool:
     return model == "B2" and theta.sigma2_F > tol and theta.tau_F < RIDGE_TAU_F
+
+
+def ridge_converged(model: str, theta: Theta, cert: dict, tol: float, converged: bool) -> bool:
+    """X4-D09: a not-converged B2 fit on the white-noise ridge with a PD Hessian and Newton decrement <= RIDGE_DEC_TOL counts as converged."""
+    return bool(not converged and ridge_flag(model, theta, tol) and not cert["hessian_not_pd"] and cert["newton_decrement"] <= RIDGE_DEC_TOL)
 
 
 def fit_2pl(model: str, templates: list[Template], pc: PairCounts, cfg_fit: dict, K: int, ids: np.ndarray, n_items: int,
@@ -94,6 +100,9 @@ def fit_2pl(model: str, templates: list[Template], pc: PairCounts, cfg_fit: dict
     if not best["converged"] and str(best["message"]).startswith("ABNORMAL") and not cert["hessian_not_pd"] \
             and cert["newton_decrement"] <= cfg_fit["newton_tol"]:
         best = dict(best, converged=True)
+    if ridge_converged(model, theta, cert, tol, best["converged"]):
+        best = dict(best, converged=True)          # X4-D09: converged on the white-noise ridge (reported, not excluded)
+        flags.append("converged_on_ridge")
     if not best["converged"]:
         flags.append("not_converged")
     if cert["hessian_not_pd"]:

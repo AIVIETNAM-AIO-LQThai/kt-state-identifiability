@@ -17,6 +17,7 @@ from difficulty_free.rules import BIAS_TOL, bias_rule
 
 G1_MAX_BAD = 0.05
 N_BOOT = 2000
+RIDGE_DELTA = 0.25          # X4-D09 sensitivity margin in T units
 NS = (300, 1000)
 
 
@@ -47,6 +48,7 @@ def _warp_rows(warps, sid, est, N=None):
         e = w[est]
         rows.append(dict(fit_failed=bool(e.get("fit_failed")), star_failed=bool(e.get("star_failed", True)),
                          converged=bool(e.get("converged", False)) and bool(e.get("star_converged", False)),
+                         ridge=bool(e.get("ridge_converged", False)), ridge_star=bool(e.get("star_ridge_converged", False)),
                          T=e.get("T"), T_star=e.get("T_star"), sigma2_F=e.get("sigma2_F"), tau_F=e.get("tau_F"),
                          sigma2_F_star=e.get("sigma2_F_star_boot"), tau_F_star=e.get("tau_F_star"), N=w["N"], rep=w["rep"]))
     return rows
@@ -54,6 +56,30 @@ def _warp_rows(warps, sid, est, N=None):
 
 def _cal(rows, seed):
     return CAL._cell_stats(rows, seed=seed) if rows else {"n_datasets": 0, "n_ok": 0, "verdict": "not evaluable (no data)", "gate_ok": False}
+
+
+def _shift(rows, which):
+    """X4-D09 sensitivity: 'plus' adds RIDGE_DELTA to T of units whose observed B2 fit is converged on the ridge (most liberal);
+    'minus' adds it to T* of units whose bootstrap B2 fit is converged on the ridge (most conservative)."""
+    out = []
+    for r in rows:
+        r = dict(r)
+        if which == "plus" and r.get("ridge") and r["T"] is not None:
+            r["T"] = r["T"] + RIDGE_DELTA
+        if which == "minus" and r.get("ridge_star") and r["T_star"] is not None:
+            r["T_star"] = r["T_star"] + RIDGE_DELTA
+        out.append(r)
+    return out
+
+
+def _cal_sens(rows, seed):
+    """Primary X3-D15 cell statistics plus the two ridge-sensitivity verdicts; 'fragile' if either differs from the primary verdict."""
+    c = _cal(rows, seed)
+    sp, sm = _cal(_shift(rows, "plus"), seed), _cal(_shift(rows, "minus"), seed)
+    c = dict(c, sens_plus_verdict=sp["verdict"], sens_minus_verdict=sm["verdict"], alpha_hat_plus=sp.get("alpha_hat"), alpha_hat_minus=sm.get("alpha_hat"),
+             fragile=bool(not c["verdict"].startswith("not evaluable") and (sp["verdict"] != c["verdict"] or sm["verdict"] != c["verdict"])),
+             n_ridge_obs=int(sum(r.get("ridge", False) for r in rows)), n_ridge_star=int(sum(r.get("ridge_star", False) for r in rows)))
+    return c
 
 
 def _alpha(rows):
@@ -139,9 +165,12 @@ def evaluate(results_dir, frozen_sha_ok: bool | None = None) -> dict:
 
     # PH4b
     r2, r1 = _warp_rows(L["warps"], "V4", "twopl"), _warp_rows(L["warps"], "V4", "free1")
-    cal2, cal1 = _cal(r2, 1), _cal(r1, 1)
+    cal2, cal1 = _cal_sens(r2, 1), _cal_sens(r1, 1)
     dl = paired_delta(r1, r2)
-    per_n = {f"N={N}": {"twopl": _cal(_warp_rows(L["warps"], "V4", "twopl", N), 2 + N), "free1": _cal(_warp_rows(L["warps"], "V4", "free1", N), 2 + N)} for N in NS}
+    dl_s = {w: paired_delta(_shift(r1, w), _shift(r2, w)) for w in ("plus", "minus")}
+    dl["sens_plus_ci_above_zero"] = dl_s["plus"].get("ci_above_zero"); dl["sens_minus_ci_above_zero"] = dl_s["minus"].get("ci_above_zero")
+    dl["fragile"] = bool(dl.get("ci_above_zero") is not None and (dl_s["plus"].get("ci_above_zero") != dl["ci_above_zero"] or dl_s["minus"].get("ci_above_zero") != dl["ci_above_zero"]))
+    per_n = {f"N={N}": {"twopl": _cal_sens(_warp_rows(L["warps"], "V4", "twopl", N), 2 + N), "free1": _cal_sens(_warp_rows(L["warps"], "V4", "free1", N), 2 + N)} for N in NS}
     if not gate_ok(["G1 V4 twopl"]):
         v = "not evaluable (gate)"
     elif cal2["verdict"] == "consistent with 5 %":
@@ -152,15 +181,16 @@ def evaluate(results_dir, frozen_sha_ok: bool | None = None) -> dict:
         v = "partly supported"
     else:
         v = "inconclusive"
-    R["rules"]["PH4b"] = {"verdict": v, "twopl_pooled": cal2, "free1_pooled": cal1, "paired_delta": dl, "per_N": per_n,
+    fragile_b = bool(cal2.get("fragile") or dl.get("fragile"))
+    R["rules"]["PH4b"] = {"verdict": v, "fragile": fragile_b, "twopl_pooled": cal2, "free1_pooled": cal1, "paired_delta": dl, "per_N": per_n,
                           "note": "P(inconclusive | exactly calibrated) is about 0.4 at 150 pooled datasets (X4-F12)"}
 
     # PH4c
     rv2 = _warp_rows(L["warps"], "V2", "twopl")
-    calc = _cal(rv2, 3)
+    calc = _cal_sens(rv2, 3)
     v = ("not evaluable (gate)" if not gate_ok(["G1 V2 twopl"]) else "supported" if calc["verdict"] == "consistent with 5 %"
          else "not supported" if calc["verdict"] == "liberal" else "inconclusive")
-    R["rules"]["PH4c"] = {"verdict": v, "V2_pooled": calc, "V2_plus_V4_twopl_pooled": _cal(rv2 + r2, 4)}
+    R["rules"]["PH4c"] = {"verdict": v, "fragile": bool(calc.get("fragile")), "V2_pooled": calc, "V2_plus_V4_twopl_pooled": _cal_sens(rv2 + r2, 4)}
 
     # PH4d (descriptive)
     d = {}
@@ -214,7 +244,10 @@ def evaluate(results_dir, frozen_sha_ok: bool | None = None) -> dict:
                             "white_noise_ridge": int(sum("white_noise_ridge" in f["flags"] for f in fits2)),
                             "w_bound_hits": int(sum(any(h.startswith("w[") for h in f["boundary_hits"]) for f in fits2)),
                             "many_extreme_lambda": int(sum("many_extreme_lambda" in f["flags"] for f in fits2))}
-    R["frozen_rules_version"] = "X4-D08"
+    D["ridge_converged_counts"] = {f"{sid} {est}": {"observed": int(sum(r["ridge"] for r in rows)), "bootstrap": int(sum(r["ridge_star"] for r in rows)), "units": len(rows)}
+                                   for sid, est in (("V2", "twopl"), ("V4", "twopl"), ("V4", "free1")) for rows in [_warp_rows(L["warps"], sid, est)] if rows}
+    D["recovery_ridge_converged_B2"] = int(sum("converged_on_ridge" in r["arms"]["twopl"]["B2"]["flags"] for r in L["fits"] if r["arms"]["twopl"]["B2"].get("status") != "failed"))
+    R["frozen_rules_version"] = "X4-D08+D09"
     return R
 
 
@@ -225,7 +258,7 @@ def markdown(R: dict) -> list[str]:
         L.append(f"| {k} | {'yes' if g['ok'] else '**NO**'} | {', '.join(f'{a}={b}' for a, b in g.items() if a != 'ok')} |")
     L += ["", "### Verdicts", "", "| rule | verdict |", "|---|---|"]
     for k, r in R["rules"].items():
-        L.append(f"| {k} | **{r['verdict']}** |")
+        L.append(f"| {k} | **{r['verdict']}**{' (fragile to ridge fits)' if r.get('fragile') else ''} |")
     a = R["rules"]["PH4a"]["cells"]
     if a:
         L += ["", "PH4a: bias of sigma2_F-hat against sigma2_F* (mean, MC CI, verdict)", "", "| cell | 2PL | 1PL-free |", "|---|---|---|"]
@@ -244,6 +277,8 @@ def markdown(R: dict) -> list[str]:
                      f"{'NA' if 'ci95' not in c else '[' + f(c['ci95'][0]) + ', ' + f(c['ci95'][1]) + ']'} | {c['verdict']} |")
         if key == "PH4b":
             L.append(f"\nPaired delta (1PL-free minus 2PL): {r['paired_delta']}. {r['note']}")
+        L.append("")
+        L.append(f"{key} ridge sensitivity (delta {RIDGE_DELTA}): " +"; ".join(f"{n}: S+ {c.get('sens_plus_verdict')}, S- {c.get('sens_minus_verdict')}, ridge units {c.get('n_ridge_obs')}/{c.get('n_ridge_star')}" for n, c in items))
     for key in ("PH4d", "PH4e"):
         L += ["", f"{key} (descriptive): {R['rules'][key]['cells']}"]
     L += ["", f"Descriptives: {R['descriptives']}", ""]

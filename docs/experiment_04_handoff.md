@@ -4,6 +4,20 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H8: ridge rule implemented, config frozen -> owner go-ahead, then run, then Opus (2026-10-09)
+
+```text
+MODEL HANDOFF — Experiment 4: READY TO RUN (not started)
+Completed (Sonnet 5.5): X4-D09 code + tests (full suite passes, X3-F06 deselected), check run (T 1.5364, converged_on_ridge), stage_confirmatory.yaml frozen (X4-D10), dry-run 154.07 CPU-h (~514 min / 18 workers).
+Frozen sha256: 4d3704f9a211eea945ca24156bb396e1c417d3da6ed6b87ef225399a565ecce8
+Command (owner, idle machine, .venv12; set OMP/OPENBLAS/MKL_NUM_THREADS=1 first):
+  python -m discrimination_free run --config configs/experiment_04/stage_confirmatory.yaml --frozen-sha256 4d3704f9a211eea945ca24156bb396e1c417d3da6ed6b87ef225399a565ecce8
+Resumable (re-run the same command); cap 200 CPU-h enforced. Afterwards: python -m discrimination_free summarize --results results/experiment_04/confirmatory/88d74ed991 --rules
+Next: owner's explicit go-ahead -> Sonnet runs and summarizes -> Opus 5.5 (Plan Mode) interprets PH4a-PH4e. Resume: `Switched to Opus; interpret results` (after the run).
+```
+
+---
+
 ## MODEL HANDOFF — H7: re-pilot accepted, ridge rule X4-D09 -> Sonnet implements it and freezes (2026-10-09)
 
 ```text

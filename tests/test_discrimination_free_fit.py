@@ -215,3 +215,27 @@ def test_ridge_flag_and_free1_is_experiment3_estimator():
     assert ridge_flag("B2", th.copy(sigma2_F=0.3, tau_F=0.2), 1e-6) and not ridge_flag("B2", th.copy(sigma2_F=0.3, tau_F=5.0), 1e-6)
     assert not ridge_flag("B2", th.copy(sigma2_F=0.0, tau_F=0.2), 1e-6) and not ridge_flag("B1", th.copy(sigma2_F=0.3, tau_F=0.2), 1e-6)
     assert jobs.fit_free is dff.fit_free
+
+
+def test_converged_on_ridge_rejudgement_x4_d09():
+    from discrimination_free.fit import ridge_converged
+    from kt_trial.config import generating_theta_dict, load_scenario
+    th = Theta.from_dict(generating_theta_dict(load_scenario("S1")))
+    ridge, off = th.copy(sigma2_F=0.4, tau_F=0.2), th.copy(sigma2_F=0.4, tau_F=5.0)
+    ok = {"hessian_not_pd": False, "newton_decrement": 0.005}
+    assert ridge_converged("B2", ridge, ok, 1e-6, False)
+    assert not ridge_converged("B2", ridge, dict(ok, newton_decrement=0.02), 1e-6, False)
+    assert not ridge_converged("B2", ridge, dict(ok, hessian_not_pd=True), 1e-6, False)
+    assert not ridge_converged("B2", off, ok, 1e-6, False)
+    assert not ridge_converged("B1", ridge, ok, 1e-6, False)
+    assert not ridge_converged("B2", ridge, ok, 1e-6, True)
+
+
+def test_rep_major_order_and_per_scenario_rep_range_x4_d10():
+    from discrimination_free import runner
+    st = {"fit": {"scenarios": ["V5"], "N_list": [300], "rep_range": [0, 2]},
+          "warp": {"scenarios": ["V2", "V4"], "N_list": [300], "rep_range": {"V4": [0, 3], "V2": [0, 1]}}, "job_order": "rep_major"}
+    ids = [runner.job_id(j) for j in runner.expand_jobs(st)]
+    assert ids == ["fit__V5__N300__r0", "warp__V2__N300__r0", "warp__V4__N300__r0", "fit__V5__N300__r1", "warp__V4__N300__r1", "warp__V4__N300__r2"]
+    plain = [runner.job_id(j) for j in runner.expand_jobs({k: v for k, v in st.items() if k != "job_order"})]
+    assert sorted(plain) == sorted(ids) and plain != ids

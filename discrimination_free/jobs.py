@@ -118,10 +118,12 @@ def run_warp_job(stage: dict, sid: str, N: int, rep: int) -> dict:
         e["fit_failed"] = bool(f1["status"] == "failed" or f2["status"] == "failed")
         if not e["fit_failed"]:
             e.update(T=float(2.0 * (f2["ll"] - f1["ll"])), sigma2_F=f2["theta"]["sigma2_F"], tau_F=f2["theta"]["tau_F"], flags_B2=f2["flags"],
-                     converged=bool(f1["converged"] and f2["converged"]), runtime_fit=f1["runtime"] + f2["runtime"])
+                     converged=bool(f1["converged"] and f2["converged"]), runtime_fit=f1["runtime"] + f2["runtime"],
+                     ridge_converged=bool("converged_on_ridge" in f2["flags"]))
             e["star_failed"] = bool(star.get("failed"))
             if not e["star_failed"]:
                 e.update(T_star=star["clr"], sigma2_F_star_boot=star["sigma2_F"], tau_F_star=star["tau_F"], runtime_star=star["runtime"],
-                         star_converged=bool(star.get("converged", "not_converged" not in star["flags2"])))
+                         star_converged=bool(star.get("converged", "not_converged" not in star["flags2"])),
+                         star_ridge_converged=bool("converged_on_ridge" in star["flags2"]))
         out[est] = e
     return out

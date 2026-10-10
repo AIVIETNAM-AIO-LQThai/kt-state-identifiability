@@ -91,3 +91,28 @@ def test_markdown_and_summarize_with_rules(tmp_path):
     R = _run(tmp_path)
     md = "\n".join(rules.markdown(R))
     assert "PH4a" in md and "PH4b" in md and "Gates" in md
+
+
+def _rows(n, ridge_obs=0, ridge_star=0, T=0.0):
+    rng = np.random.default_rng(3)
+    Ts = rng.chisquare(1, n) * (rng.random(n) < 0.5)
+    out = []
+    for i in range(n):
+        out.append(dict(fit_failed=False, star_failed=False, converged=True, T=float(T if T else 0.0), T_star=float(Ts[i]), N=300, rep=i,
+                        ridge=i < ridge_obs, ridge_star=i < ridge_star, sigma2_F=0.0, tau_F=5.0, sigma2_F_star=0.0, tau_F_star=5.0))
+    return out
+
+
+def test_sensitivity_equals_primary_without_ridge_units_and_can_flag_fragile(monkeypatch):
+    base = _rows(150)
+    c0 = rules._cal_sens(base, 1)
+    assert c0["sens_plus_verdict"] == c0["verdict"] == c0["sens_minus_verdict"] and not c0["fragile"] and c0["n_ridge_obs"] == 0
+    # fragility label: stub the cell statistic so the verdict depends on whether any T was shifted
+    rows = [dict(r, T=(1.0 if i < 12 else 0.0), ridge=i < 12) for i, r in enumerate(base)]
+    stub = lambda rr, seed: {"verdict": "liberal" if any(r["T"] > 1.1 for r in rr) else "consistent with 5 %", "alpha_hat": 0.05}
+    monkeypatch.setattr(rules, "_cal", stub)
+    c = rules._cal_sens(rows, 1)
+    assert c["verdict"] == "consistent with 5 %" and c["sens_plus_verdict"] == "liberal" and c["sens_minus_verdict"] == "consistent with 5 %"
+    assert c["fragile"] is True and c["n_ridge_obs"] == 12
+    assert rules._shift(rows, "plus")[0]["T"] == pytest.approx(1.0 + rules.RIDGE_DELTA) and rules._shift(rows, "plus")[20]["T"] == 0.0
+    assert rules._shift(rows, "minus")[0]["T"] == 1.0
