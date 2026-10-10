@@ -4,6 +4,30 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H3: Stage 0 accepted -> Sonnet builds Stage 1 and runs the pilot (2026-10-10)
+
+```text
+MODEL HANDOFF — Experiment 5 Stage 1 (pilot infrastructure and pilot; stop before any freeze)
+Completed (Opus 5.5): Stage-0 review X5-F03 (accepted; tau_x = 2 kept); X5-D06 (cells E1-E6, sizes, provisional rules, E4 with warp replicates).
+Next task (Sonnet 5.5):
+  1. state_dependence/ infrastructure modelled on discrimination_free (runner: enforced cap, frozen gate, rep-major order, per-scenario rep_range,
+     per-scenario cost model, code_hash over kt_trial + difficulty_free + discrimination_free + state_dependence):
+     jobs.py  fit job: simulate_feedback -> fit_2pl B1, B2 -> eta_test at B2 (and B1) for tau_x {2, 5, 10}; store sigma2_F*, tau_F, T, flags,
+              eta-hat, S, p, delta. warp job (E4): the same plus one replicate from the fitted B1 null (simulate_feedback without feedback,
+              as discrimination_free.jobs.null_2pl_replicate) and its T*.
+     runner.py, summarize.py, rules.py (H5a-H5e, G1-G3 per X5-D06; reuse difficulty_free.calibration and difficulty_free.rules.bias_rule;
+     CP CIs), cli run / summarize --rules.
+  2. Tests: job envelope round-trip on tiny N; rules on synthetic envelopes (H5c verdict branches, H5b rule, G1); rep-major order;
+     frozen-sha refusal; full suite (X3-F06 known).
+  3. Pilot: configs/experiment_05/stage_pilot.yaml (E1-E6, 3 replications per cell and N, E4 warp, seed 20265002), ~15 CPU-h, idle machine,
+     .venv12, single-thread BLAS. Report unit times per cell (fit, scores, replicate), G1 counts, polish counts, diagnostic ran on every fit,
+     first-look numbers (no verdicts).
+  4. docs/experiment_05_pilot_report.md, X5-F04+, handoff H4. STOP for the Opus pilot review (the owner sets the cap; rules frozen there).
+Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H2: Stage 0 done -> Opus reviews (2026-10-10)
 
 ```text
