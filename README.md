@@ -83,5 +83,14 @@ shown to improve it.
 ## Experiment 5 (branch `exp/outcome-driven-dynamics`)
 
 Outcome-driven dynamics (an error shifts the following answers) versus the transient state F, and a schedule-based score diagnostic
-(package `state_dependence/`). **In progress**; protocol `docs/experiment_05_protocol.md`.
+(package `state_dependence/`). Protocol `docs/experiment_05_protocol.md`; **final report `docs/experiment_05_final_report.md`** (closed, X5-D09).
+
+Confirmatory run `results/experiment_05/confirmatory/5a3afdf728/` (620 datasets, 158.6 CPU-h). Verdicts under the frozen rules:
+- **H5a supported:** feedback without any F is declared "F" in 30/30 datasets, and weak short feedback in 98 % at N = 1000.
+- **H5b supported:** the carry-over score diagnostic detects strong feedback in 30/30 datasets. For weak short feedback its power is 0.34 / 0.64.
+- **H5c inconclusive:** the level is 0.073 [0.047, 0.109]. The excess is in the cell with F present.
+- **H5d inconclusive:** under gain misfit the rate is 0.070 [0.029, 0.139].
+- **H5e:** with F and feedback together, σ̂²_F\* is biased by +0.24.
+
+Conclusion: the F test detects within-session dependence, not a latent state. Report the diagnostic with any F.
 

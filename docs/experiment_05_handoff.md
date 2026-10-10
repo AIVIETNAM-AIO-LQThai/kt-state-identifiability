@@ -4,6 +4,22 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H7: Experiment 5 closed -> Opus plans Experiment 6 (2026-10-11)
+
+```text
+MODEL HANDOFF — Experiment 5 CLOSED
+Completed (Opus 5.5): run audit X5-F08 (valid: 620/620 ok, clean manifest, code hash = freeze, 158.6 CPU-h); verdicts X5-F09 (H5a supported,
+  H5b supported, H5c inconclusive 0.073 [0.047, 0.109], H5d inconclusive 0.070 [0.029, 0.139], H5e bias +0.24); exploratory level check X5-F10
+  (excess confined to E1 with F present: 0.107; scripts/experiment_05_level_check.py); closure X5-D09; docs/experiment_05_final_report.md; README.
+Conclusion: the F test detects within-session dependence, not a latent state; the carry-over diagnostic catches strong feedback (power 1.00)
+  but is weaker than the F test for weak short feedback (64 % vs 98 % at N = 1000).
+Optional Sonnet chore (no rerun, results unchanged): change the stale "Provisional rules (X5-D06)" heading in state_dependence/summarize.py's markdown.
+Next (Opus 5.5, Plan Mode): choose and plan Experiment 6 (candidates in X5-D09: joint model with eta; bootstrap calibration of the diagnostic;
+  wider feedback grid). Git: the owner runs it. Resume: `Switched to Opus; plan the next experiment`.
+```
+
+---
+
 ## MODEL HANDOFF — H6: confirmatory config frozen -> owner go-ahead, then run, then Opus (2026-10-10)
 
 ```text
