@@ -4,6 +4,21 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H2: Stage 0 done -> Opus reviews (2026-10-10)
+
+```text
+MODEL HANDOFF — Experiment 5: Stage-0 GATE REVIEW
+Completed (Sonnet 5.5): state_dependence/ (simulator, diagnostic, audit, cli), tests (G0-1 met: 6 pass; full suite passes except X3-F06), population audit (11 points, N_big = 200,000, 1.87 CPU-h), docs/experiment_05_stage0_report.md, X5-F01, X5-F02.
+Result: G0-2 tau_x = 2 (a-priori rule); G0-3 met (predicted power 1.00 at N = 1000, kappa -0.25, tau_D 10; no-feedback and S8n signals ~ 0, predicted S8n rejection 0.052).
+  Feedback without F is fitted as F (sigma2_F* 0.065-0.18; E[T]/q95 from 1.5 to 95). Weakest feedback point: kappa -0.10, tau_D 2 (E[T]/q95 1.5 at N = 300, 4.0 at N = 1000; diagnostic power 0.27 / 0.68 at tau_x = 2).
+Questions for Opus: (1) confirm tau_x = 2 or switch (the a-priori rule gave 2, driven by the tau_D = 2 points); (2) choose E4 and finalise cells, sizes and the H5 rules (X5-D01); (3) whether the weak points need more than the planned 30 datasets per N;
+  (4) whether the E[T]/q95 margins mean the F-test power cells need warp bootstrap replicates (X5-D03: only where E[T] is close to q95).
+Not done: runner / CLI / summarize / rules for the pilot (Stage 1); nothing beyond Stage 0.
+Next (Opus 5.5, Plan Mode): Stage-0 review. Git: the owner runs it. Resume: `Switched to Opus; review stage 0`.
+```
+
+---
+
 ## MODEL HANDOFF — H1: protocol approved -> Sonnet builds Stage 0 (2026-10-10)
 
 ```text

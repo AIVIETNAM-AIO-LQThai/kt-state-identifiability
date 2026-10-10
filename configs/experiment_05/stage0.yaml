@@ -1,0 +1,10 @@
+# Experiment 5, Stage 0: population audit of the carry-over diagnostic and of the F test under outcome feedback (X5-D04).
+# No confirmatory data. Fits to N_big simulated learners; predicted power at N_list from the per-learner standardised signal.
+master_seed: 20265001
+N_big: 200000
+N_list: [300, 1000]
+taus_x: [2.0, 5.0, 10.0]          # candidate time constants of the recent-error-load covariate (G0-2 picks one a priori)
+kappas: [-0.10, -0.25]            # feedback amplitude (error shifts the following latent propensity); tau_D = 10 with kappa -0.25 is S7 without F
+tau_Ds: [2.0, 10.0]
+n_starts: 5
+null_reference: results/experiment_04/confirmatory/88d74ed991   # Experiment 4 V2 2PL T* (X5-D03)
