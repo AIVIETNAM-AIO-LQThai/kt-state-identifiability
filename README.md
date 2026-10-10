@@ -73,3 +73,15 @@ In short: estimating difficulties jointly recovers sigma2_F at tau_F = 10 withou
 difficulties; fixing difficulties from an external calibration with error inflates sigma2_F-hat by about +0.2 and can create F where
 none exists; the free-difficulty null test's 5 % level is not yet established (3/20 rejections in each null scenario).
 
+## Experiment 4 (branch `exp/discrimination-robust-recoverability`)
+
+Recovery of F when item discriminations are unknown as well (2PL; package `discrimination_free/`). **Complete**; see
+`docs/experiment_04_final_report.md`. In short: 2PL recovers sigma2_F without bias and at no variance cost, and is a safe default; the null
+test's calibration under discrimination misfit is unresolved for both 1PL-free and 2PL (alpha-hat about 0.075 at nominal 0.05), and 2PL is not
+shown to improve it.
+
+## Experiment 5 (branch `exp/outcome-driven-dynamics`)
+
+Outcome-driven dynamics (an error shifts the following answers) versus the transient state F, and a schedule-based score diagnostic
+(package `state_dependence/`). **In progress**; protocol `docs/experiment_05_protocol.md`.
+
