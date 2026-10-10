@@ -1,5 +1,7 @@
-"""python -m state_dependence audit --config configs/experiment_05/stage0.yaml [--out DIR] [--workers n]
-python -m state_dependence report --config configs/experiment_05/stage0.yaml [--out DIR] [--md docs/experiment_05_stage0_report.md]"""
+"""python -m state_dependence audit  --config configs/experiment_05/stage0.yaml [--out DIR] [--workers n]
+python -m state_dependence report --config configs/experiment_05/stage0.yaml [--out DIR] [--md FILE]
+python -m state_dependence run    --config configs/experiment_05/stage_pilot.yaml [--dry-run] [--workers n] [--retry-errors] [--allow-mismatch] [--frozen-sha256 SHA]
+python -m state_dependence summarize --results DIR [--rules]"""
 from __future__ import annotations
 
 import os
@@ -23,7 +25,26 @@ def main(argv=None) -> int:
             p.add_argument("--workers", type=int, default=4)
         else:
             p.add_argument("--md", default=None)
+    r = sub.add_parser("run")
+    r.add_argument("--config", required=True)
+    r.add_argument("--dry-run", action="store_true")
+    r.add_argument("--workers", type=int, default=None)
+    r.add_argument("--retry-errors", action="store_true")
+    r.add_argument("--allow-mismatch", action="store_true")
+    r.add_argument("--frozen-sha256", default=None)
+    sm = sub.add_parser("summarize")
+    sm.add_argument("--results", required=True)
+    sm.add_argument("--rules", action="store_true")
     args = ap.parse_args(argv)
+    if args.cmd == "run":
+        from .runner import run_stage
+        return run_stage(args.config, workers=args.workers, dry_run=args.dry_run, retry_errors=args.retry_errors,
+                         allow_mismatch=args.allow_mismatch, frozen_sha256=args.frozen_sha256)
+    if args.cmd == "summarize":
+        from .summarize import summarize
+        summarize(args.results, with_rules=args.rules)
+        print("wrote summary.json / summary.md in", args.results)
+        return 0
     from kt_trial.config import load_yaml
     from . import audit
     ac = load_yaml(args.config)

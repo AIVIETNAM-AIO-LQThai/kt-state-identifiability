@@ -4,6 +4,19 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H4: pilot done -> Opus pilot review and freeze decisions (2026-10-10)
+
+```text
+MODEL HANDOFF — Experiment 5: PILOT REVIEW
+Completed (Sonnet 5.5): Stage 1 infrastructure (jobs, runner, summarize, rules, CLI), tests (full suite passes except X3-F06), pilot 36/36 ok (8.37 CPU-h, 35 min wall); X5-F04, X5-F05; docs/experiment_05_pilot_report.md; results/experiment_05/pilot/bf9ceeeae2/.
+Result: all B2 fits converged, the diagnostic ran at every fit, G1-G3 pass; predictions of Stage 0 reproduced (E3 sigma2_F-hat ~0.14, E5 bias +0.27/+0.25, diagnostic 6/6 in E3 and E5; E4 diagnostic 0/3 and 2/3; E1/E2 0/12).
+Cost: X5-D06 matrix 138.5 CPU-h at pilot means, 193.9 with the x1.4 factor (7.7 / 10.8 h on 18 workers).
+Questions for Opus / the owner: (1) the CPU cap (trim order in X5-D06 saves ~22 / 6 / 12 CPU-h before the factor); (2) final sizes; (3) H5a verdict thresholds (X5-D06 gives none); (4) confirm the provisional rules H5b-H5e, the primary tau_x = 2 and the E4 warp design; (5) then Sonnet writes configs/experiment_05/stage_confirmatory.yaml (seed 20265101, per-scenario rep_range, rep-major, cost model from the pilot, cap enforced), dry-runs, freezes (sha256 + code hash) and stops for the owner's go-ahead.
+Next (Opus 5.5, Plan Mode): pilot review. Git: the owner runs it. Resume: `Switched to Opus; review pilot`.
+```
+
+---
+
 ## MODEL HANDOFF — H3: Stage 0 accepted -> Sonnet builds Stage 1 and runs the pilot (2026-10-10)
 
 ```text

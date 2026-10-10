@@ -1,0 +1,26 @@
+# Experiment 5 PILOT (X5-D06): not confirmatory; nothing here is frozen. Cells E1-E6; lambda == 1 everywhere; 2PL fits (B1, B2) plus the carry-over
+# score test at the B2 and B1 fits for tau_x in taus_x (primary 2). E4 runs as a `warp` unit: the fit plus ONE bootstrap replicate from the fitted null.
+stage: pilot
+master_seed: 20265002
+n_starts: 5
+taus_x: [2.0, 5.0, 10.0]
+null_reference: results/experiment_04/confirmatory/88d74ed991      # Experiment 4 V2 2PL T* (X5-D03)
+stage0_summary: results/experiment_05/stage0/summary.json
+scenarios:
+  - {id: E1, base: S1}                                             # F present, no feedback
+  - {id: E2, base: S2}                                             # F absent, no feedback
+  - {id: E3, base: S2, feedback: {kappa: -0.25, tau_D: 10.0}}      # no F, S7-strength feedback
+  - {id: E4, base: S2, feedback: {kappa: -0.10, tau_D: 2.0}}       # no F, weak short feedback (weak spot of Stage 0)
+  - {id: E5, base: S1, feedback: {kappa: -0.25, tau_D: 10.0}}      # F + feedback (= S7)
+  - {id: E6, base: S8n}                                            # no F, lognormal gains (non-feedback misfit)
+fit:
+  scenarios: [E1, E2, E3, E5, E6]
+  N_list: [300, 1000]
+  rep_range: {E1: [0, 3], E2: [0, 3], E3: [0, 3], E5: [0, 3], E6: [0, 3]}
+warp:
+  scenarios: [E4]
+  N_list: [300, 1000]
+  rep_range: {E4: [0, 3]}
+job_order: rep_major
+cost_model_sec: {default: 700, E4: 1100}
+budget: {max_cpu_hours: 30, enforce_cpu_cap: true, workers: 18, max_wall_minutes: 300}

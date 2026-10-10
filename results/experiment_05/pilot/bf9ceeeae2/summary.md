@@ -1,0 +1,79 @@
+# Experiment 5 summary: outcome-driven dynamics versus the transient state F
+
+- stage `pilot`, config hash `bf9ceeeae230`, code hash `5a7eae8695fb`
+- env: {'python': '3.12.10', 'executable': 'C:\\Users\\Dell ProMax Tower T2\\Downloads\\code\\.venv12\\Scripts\\python.exe', 'platform': 'Windows-11-10.0.26200-SP0', 'numpy': '2.5.3', 'scipy': '1.18.1', 'pandas': '3.0.6', 'pyyaml': '6.0.3', 'cpu_count': 20, 'threads': {'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'}}
+- job accounting: {'jobs': 36, 'ok': 36, 'errors': 0}; CPU 8.37 h
+
+| cell | n | sigma2_F* | mean sigma2_F-hat | median tau_F-hat | B2 converged | mean job s | diag reject share (tau_x 2 / 5 / 10) | eta-hat (tau_x 2) | T values |
+|---|---|---|---|---|---|---|---|---|---|
+| E1|N=1000 | 3 | 0.160 | 0.157 | 9.4 | 1.00 | 647 | 0.00 / 0.00 / 0.00 | 0.000 | [637.11, 512.1, 500.48] |
+| E1|N=300 | 3 | 0.160 | 0.175 | 11.0 | 1.00 | 815 | 0.00 / 0.00 / 0.00 | 0.009 | [249.96, 200.7, 183.16] |
+| E2|N=1000 | 3 | 0.000 | 0.007 | 1.0 | 1.00 | 584 | 0.00 / 0.00 / 0.00 | -0.013 | [0.0, 4.08, 0.0] |
+| E2|N=300 | 3 | 0.000 | 0.228 | 0.3 | 1.00 | 834 | 0.00 / 0.00 / 0.00 | 0.004 | [1.73, 3.22, 0.0] |
+| E3|N=1000 | 3 | 0.000 | 0.141 | 232.5 | 1.00 | 976 | 1.00 / 1.00 / 1.00 | -0.264 | [1170.27, 1057.26, 1433.03] |
+| E3|N=300 | 3 | 0.000 | 0.162 | 59.5 | 1.00 | 955 | 1.00 / 1.00 / 1.00 | -0.285 | [295.83, 505.44, 379.11] |
+| E4|N=1000 | 3 | 0.000 | 0.038 | 4.0 | 1.00 | 1097 | 0.67 / 0.33 / 0.00 | -0.077 | [17.42, 8.45, 22.4] |
+| E4|N=300 | 3 | 0.000 | 0.064 | 5.2 | 1.00 | 1352 | 0.00 / 0.00 / 0.00 | -0.003 | [17.06, 10.34, 3.57] |
+| E5|N=1000 | 3 | 0.160 | 0.406 | 31.7 | 1.00 | 924 | 1.00 / 1.00 / 1.00 | -0.255 | [5103.88, 5000.77, 5793.49] |
+| E5|N=300 | 3 | 0.160 | 0.431 | 39.2 | 1.00 | 928 | 1.00 / 1.00 / 1.00 | -0.301 | [1852.66, 1978.38, 1842.14] |
+| E6|N=1000 | 3 | 0.000 | 0.000 | 29.6 | 1.00 | 408 | 0.00 / 0.00 / 0.00 | 0.016 | [0.0, 0.0, 0.0] |
+| E6|N=300 | 3 | 0.000 | 0.047 | 1.3 | 1.00 | 525 | 0.33 / 0.33 / 0.00 | -0.056 | [0.23, 0.89, 0.13] |
+
+## Warp units (E4): observed T and one bootstrap T* per dataset (pilot: timing only)
+
+| cell | T | T* | fit failures | bootstrap failures | mean s fit / replicate |
+|---|---|---|---|---|---|
+| E4|N=1000 | [17.42, 8.45, 22.4] | [0.06, 5.35, 1.81] | 0 | 0 | 661 / 429 |
+| E4|N=300 | [17.06, 10.34, 3.57] | [0.69, 2.35, 0.44] | 0 | 0 | 759 / 586 |
+
+## Provisional rules (X5-D06)
+
+### Gates
+
+| gate | ok | detail |
+|---|---|---|
+| G2 single code hash | yes | hashes=['5a7eae8695fb'] |
+| G3 single-thread BLAS | yes | threads={'OMP_NUM_THREADS': '1', 'OPENBLAS_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1'} |
+| no job errors | yes | errors=0 |
+| G1 E1 N=300 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E1 N=1000 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E2 N=300 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E2 N=1000 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E3 N=300 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E3 N=1000 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E4 N=300 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E4 N=1000 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E5 N=300 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E5 N=1000 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E6 N=300 | yes | n=3, n_valid=3, share_bad=0.0 |
+| G1 E6 N=1000 | yes | n=3, n_valid=3, share_bad=0.0 |
+
+### Verdicts
+
+| rule | verdict |
+|---|---|
+| H5a | **descriptive (thresholds pending Opus)** |
+| H5b | **inconclusive** |
+| H5c | **inconclusive** |
+| H5d | **inconclusive** |
+| H5e | **descriptive** |
+
+Null reference q95 (Experiment 4 V2 2PL T*): {'300': 4.231829816219397, '1000': 5.159372954070556}
+
+H5b diagnostic rejection shares (tau_x = 2, B2): 
+- E3 N=300: 3/3 = 1.00, CP [0.292, 1.0]
+- E3 N=1000: 3/3 = 1.00, CP [0.292, 1.0]
+- E5 N=300: 3/3 = 1.00, CP [0.292, 1.0]
+- E5 N=1000: 3/3 = 1.00, CP [0.292, 1.0]
+- E4 (descriptive) N=300: 0/3 = 0.00, CP [0.0, 0.708]
+- E4 (descriptive) N=1000: 2/3 = 0.67, CP [0.094, 0.992]
+
+H5c: pooled 0/12 = 0.000, CP [0.0, 0.2646484693970512], inconclusive 
+
+H5d: pooled 1/6 = 0.167, CP [0.004210744514489473, 0.6412345789976748], inconclusive 
+
+H5a: {'verdict': 'descriptive (thresholds pending Opus)', 'E3': {'N=300': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0], 'q95_ref': 4.231829816219397}, 'N=1000': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0], 'q95_ref': 5.159372954070556}}, 'E4': {'ref_q95_N=300': {'k': 2, 'n': 3, 'share': 0.6666666666666666, 'cp95': [0.09429932405024612, 0.9915962413403874]}, 'ref_q95_N=1000': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'warp_own_T_star_pooled': {'n_datasets': 6, 'n_ok': 6, 'share_bad': 0.0, 'gate_ok': True, 'verdict': 'not evaluable (too few datasets)'}, 'warp_own_T_star_N=300': {'n_datasets': 3, 'n_ok': 3, 'share_bad': 0.0, 'gate_ok': True, 'verdict': 'not evaluable (too few datasets)'}, 'warp_own_T_star_N=1000': {'n_datasets': 3, 'n_ok': 3, 'share_bad': 0.0, 'gate_ok': True, 'verdict': 'not evaluable (too few datasets)'}}}
+
+H5e: {'verdict': 'descriptive', 'cells': {'N=300': {'n': 3, 'bias': 0.2705824116832278, 'mcse': 0.015103061127022012, 'mc_ci': [0.24098041187426464, 0.30018441149219094], 'sd': 0.026159269221820592, 'rmse': 0.2714241080359755, 'verdict': 'fail'}, 'N=1000': {'n': 3, 'bias': 0.24607124204748476, 'mcse': 0.018538795219719385, 'mc_ci': [0.20973520341683477, 0.28240728067813475], 'sd': 0.032110135231669, 'rmse': 0.24746399742020903, 'verdict': 'fail'}}}
+
+Descriptives: {'stage0_predictions': {'E1': {'sigma2_F_star': 0.15948535121078092, 'tau_F': 10.090489481298228, 'E_T': {'300': 178.53542133021355, '1000': 595.1180711007117}, 'E_T_over_q95': {'300': 42.188705378921, '1000': 115.34697654124527}, 'diag_power': {'300': 0.050256948488624636, '1000': 0.05085680815931747}}, 'E2': {'sigma2_F_star': 0.0004991912487827527, 'tau_F': 14.697990137847983, 'E_T': {'300': 0.0026317105293273925, '1000': 0.008772368431091308}, 'E_T_over_q95': {'300': 0.0006218847741090146, '1000': 0.0017002780200586643}, 'diag_power': {'300': 0.050000017571582914, '1000': 0.05000005857194466}}, 'E3': {'sigma2_F_star': 0.14389412554691097, 'tau_F': 999.9999999999998, 'E_T': {'300': 401.8765803794861, '1000': 1339.5886012649537}, 'E_T_over_q95': {'300': 94.9652036665576, '1000': 259.6417458458915}, 'diag_power': {'300': 0.9941993584905596, '1000': 0.999999999761789}}, 'E4': {'sigma2_F_star': 0.06463782668256803, 'tau_F': 2.1312899300974935, 'E_T': {'300': 6.223216166496277, '1000': 20.744053888320924}, 'E_T_over_q95': {'300': 1.470573354023941, '1000': 4.0206540742426125}, 'diag_power': {'300': 0.2668404415474973, '1000': 0.6841654102501252}}, 'E5': {'sigma2_F_star': 0.4130016222602181, 'tau_F': 35.35801197389422, 'E_T': {'300': 1710.631664515257, '1000': 5702.10554838419}, 'E_T_over_q95': {'300': 404.2297868309575, '1000': 1105.1935185041116}, 'diag_power': {'300': 0.9836596735147005, '1000': 0.9999999828736847}}, 'E6': {'sigma2_F_star': 0.0, 'tau_F': 0.4997921906182601, 'E_T': {'300': 0.0, '1000': 0.0}, 'E_T_over_q95': {'300': 0.0, '1000': 0.0}, 'diag_power': {'300': 0.05048649144956591, '1000': 0.051622757237805975}}}, 'secondary_tau_x_rejection': {'E1 N=300 tau_x=5': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E1 N=300 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E1 N=1000 tau_x=5': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E1 N=1000 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E2 N=300 tau_x=5': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E2 N=300 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E2 N=1000 tau_x=5': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E2 N=1000 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E3 N=300 tau_x=5': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E3 N=300 tau_x=10': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E3 N=1000 tau_x=5': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E3 N=1000 tau_x=10': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E4 N=300 tau_x=5': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E4 N=300 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E4 N=1000 tau_x=5': {'k': 1, 'n': 3, 'share': 0.3333333333333333, 'cp95': [0.008403758659612643, 0.9057006759497539]}, 'E4 N=1000 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E5 N=300 tau_x=5': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E5 N=300 tau_x=10': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E5 N=1000 tau_x=5': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E5 N=1000 tau_x=10': {'k': 3, 'n': 3, 'share': 1.0, 'cp95': [0.29240177382128674, 1.0]}, 'E6 N=300 tau_x=5': {'k': 1, 'n': 3, 'share': 0.3333333333333333, 'cp95': [0.008403758659612643, 0.9057006759497539]}, 'E6 N=300 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E6 N=1000 tau_x=5': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}, 'E6 N=1000 tau_x=10': {'k': 0, 'n': 3, 'share': 0.0, 'cp95': [0.0, 0.7075982261787133]}}, 'f_by_diagnostic_2x2': {'E1 N=300': {'n': 3, 'F_only': 3, 'diag_only': 0, 'both': 0, 'neither': 0}, 'E1 N=1000': {'n': 3, 'F_only': 3, 'diag_only': 0, 'both': 0, 'neither': 0}, 'E2 N=300': {'n': 3, 'F_only': 0, 'diag_only': 0, 'both': 0, 'neither': 3}, 'E2 N=1000': {'n': 3, 'F_only': 0, 'diag_only': 0, 'both': 0, 'neither': 3}, 'E3 N=300': {'n': 3, 'F_only': 0, 'diag_only': 0, 'both': 3, 'neither': 0}, 'E3 N=1000': {'n': 3, 'F_only': 0, 'diag_only': 0, 'both': 3, 'neither': 0}, 'E4 N=300': {'n': 3, 'F_only': 2, 'diag_only': 0, 'both': 0, 'neither': 1}, 'E4 N=1000': {'n': 3, 'F_only': 1, 'diag_only': 0, 'both': 2, 'neither': 0}, 'E5 N=300': {'n': 3, 'F_only': 0, 'diag_only': 0, 'both': 3, 'neither': 0}, 'E5 N=1000': {'n': 3, 'F_only': 0, 'diag_only': 0, 'both': 3, 'neither': 0}, 'E6 N=300': {'n': 3, 'F_only': 0, 'diag_only': 1, 'both': 0, 'neither': 2}, 'E6 N=1000': {'n': 3, 'F_only': 0, 'diag_only': 0, 'both': 0, 'neither': 3}}, 'p_value_hist_E1_E2': [0, 1, 0, 4, 0, 0, 0, 1, 4, 2], 'eta_hat_mean': {'E1 N=300': 0.008706689992477827, 'E1 N=1000': 0.0003939085210561497, 'E2 N=300': 0.003881347614797956, 'E2 N=1000': -0.012525534209066172, 'E3 N=300': -0.28533657984610383, 'E3 N=1000': -0.26398434749658134, 'E4 N=300': -0.0029025963619055037, 'E4 N=1000': -0.0767048712787275, 'E5 N=300': -0.30094682661916916, 'E5 N=1000': -0.25480067486302044, 'E6 N=300': -0.0562764959907654, 'E6 N=1000': 0.016427208725653408}, 'fit_summary': {'E1 N=300': {'n': 3, 'sigma2_F_mean': 0.1745582268626444, 'sigma2_F_error_vs_star_mean': 0.014558226862644371, 'tau_F_median': 10.959813545840449, 'tau_F_at_bound': 0, 'T_median': 200.7026702426374, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 7}, 'E1 N=1000': {'n': 3, 'sigma2_F_mean': 0.15678355415981238, 'sigma2_F_error_vs_star_mean': -0.003216445840187645, 'tau_F_median': 9.424666758896919, 'tau_F_at_bound': 0, 'T_median': 512.0999635588378, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 6}, 'E2 N=300': {'n': 3, 'sigma2_F_mean': 0.22773081466103884, 'sigma2_F_error_vs_star_mean': 0.22773081466103884, 'tau_F_median': 0.347029853032779, 'tau_F_at_bound': 0, 'T_median': 1.7312595187686384, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 8}, 'E2 N=1000': {'n': 3, 'sigma2_F_mean': 0.00716996592151983, 'sigma2_F_error_vs_star_mean': 0.00716996592151983, 'tau_F_median': 1.0, 'tau_F_at_bound': 0, 'T_median': 1.862645149230957e-09, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 6}, 'E3 N=300': {'n': 3, 'sigma2_F_mean': 0.16207666577581312, 'sigma2_F_error_vs_star_mean': 0.16207666577581312, 'tau_F_median': 59.481906162525654, 'tau_F_at_bound': 0, 'T_median': 379.1068476298824, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 9}, 'E3 N=1000': {'n': 3, 'sigma2_F_mean': 0.1406818980272446, 'sigma2_F_error_vs_star_mean': 0.1406818980272446, 'tau_F_median': 232.46723865925773, 'tau_F_at_bound': 1, 'T_median': 1170.266485484317, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 9}, 'E4 N=300': {'n': 3, 'sigma2_F_mean': 0.06426570702960901, 'sigma2_F_error_vs_star_mean': 0.06426570702960901, 'tau_F_median': 5.167781818579862, 'tau_F_at_bound': 0, 'T_median': 10.341023496352136, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 6}, 'E4 N=1000': {'n': 3, 'sigma2_F_mean': 0.03829439678693809, 'sigma2_F_error_vs_star_mean': 0.03829439678693809, 'tau_F_median': 4.045787924296669, 'tau_F_at_bound': 0, 'T_median': 17.417803689837456, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 6}, 'E5 N=300': {'n': 3, 'sigma2_F_mean': 0.4305824116832278, 'sigma2_F_error_vs_star_mean': 0.2705824116832278, 'tau_F_median': 39.17050638360936, 'tau_F_at_bound': 0, 'T_median': 1852.6613409202546, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 11}, 'E5 N=1000': {'n': 3, 'sigma2_F_mean': 0.4060712420474848, 'sigma2_F_error_vs_star_mean': 0.24607124204748476, 'tau_F_median': 31.674702871094972, 'tau_F_at_bound': 0, 'T_median': 5103.87977835536, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 7}, 'E6 N=300': {'n': 3, 'sigma2_F_mean': 0.046846986115826904, 'sigma2_F_error_vs_star_mean': 0.046846986115826904, 'tau_F_median': 1.2926405124695466, 'tau_F_at_bound': 0, 'T_median': 0.2255423478782177, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 6}, 'E6 N=1000': {'n': 3, 'sigma2_F_mean': 0.0, 'sigma2_F_error_vs_star_mean': 0.0, 'tau_F_median': 29.59230890368534, 'tau_F_at_bound': 0, 'T_median': 0.0, 'ridge_converged_B2': 0, 'not_converged_B2': 0, 'polished_B1_B2': 6}}}
