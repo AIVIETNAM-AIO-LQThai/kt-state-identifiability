@@ -94,3 +94,9 @@ Confirmatory run `results/experiment_05/confirmatory/5a3afdf728/` (620 datasets,
 
 Conclusion: the F test detects within-session dependence, not a latent state. Report the diagnostic with any F.
 
+## Experiment 6 (branch `exp/feedback-adjusted-F`)
+
+Can F be recovered and tested once outcome feedback is part of the fitted model? The approach is a feedback-aware pairwise composite likelihood
+(approximation L0: exact direct pair effect, mean-field remainder) in the package `feedback_model/`, compared with the 2PL model and with a
+schedule-term model (B2+η). **In progress**; protocol `docs/experiment_06_protocol.md`, decisions `docs/experiment_06_decisions.md`.
+
