@@ -186,3 +186,49 @@ The rough total is 150–250 CPU-h, because an FB fit costs about twice a 2PL fi
 - L0 and L1 are approximations. If they leave a pseudo-true bias, that bias is a property of the method and is reported as such.
 - The fitted feedback form (exponential, inside the λ bracket, driven by errors on practice attempts) matches the generator. Misspecified feedback forms, such as success-driven or item-specific feedback, are outside scope.
 - With 8 templates, the information about κ and τ_D comes from limited schedule variation and from the within-session pair structure. G0-4 quantifies it.
+
+## Addendum (2026-10-11, X6-D06 and X6-D07; Opus Stage-0 review, approved by the owner)
+**Erratum to 1.3(d) (X6-D06).** The covariance between earlier errors and the latent state is not second order. Cov(E_r, M0) is O(1), so the
+term it induces in Var(Z_t) and in Cov(Z_s, Z_t) is **first order in κ**. Stage 0 confirms this: L0 is exact without feedback and nearly exact
+for weak feedback (E4), but at κ = −0.25, τ_D = 10 it misses later practice success rates by 0.017 on average (χ²/df 95–160 per pair). Its fits
+there absorb the gap into σ²_r (0.16–0.19 against 0.0225), τ_R, the spread of λ, and σ²_F (0.020 in E3, a bias of +0.041 in E5).
+The text of 1.3(d) above is left as approved; this addendum supersedes it.
+
+**Fallback L1 (X6-D07): probit linearisation, direct effect exact.** Per template:
+- **Latent core:** X with zero mean and Σ_X = (λλ')∘L + I.
+- **Mean:** μ̃_t = −b_t + λ_t(mu0_t + m_t), with m_t = Σ_r U_rt e_r and U = κW (as L0).
+- **Linearised errors:** E_r = e_r + β_r z_r + u_r, with
+  - β_r = −φ(a_r)/σ_r;
+  - Var(u_r) = s_r = e_r(1 − e_r) − φ(a_r)²;
+  - e_r = Φ(−a_r), a_r = μ̃_r/σ_r, σ_r² = Var(z_r);
+  - u_r uncorrelated with z (exact for Gaussian z).
+- **Linear system:** z = X + ΛUᵀ(diag(β) z + u). So:
+  - B[t,r] = λ_t U_rt β_r (strictly lower-triangular);
+  - A = (I − B)⁻¹;
+  - G = AΛUᵀ;
+  - Σ_z = AΣ_XAᵀ + G diag(s) Gᵀ.
+- **Forward recursion, row by row:**
+  1. A[t,:] = e_tᵀ + B[t,:t]A[:t,:];
+  2. G[t,:] = A[t,:]ΛUᵀ;
+  3. σ_t² = A[t,:]Σ_XA[t,:]ᵀ + Σ_r G[t,r]² s_r;
+  4. then m_t, μ̃_t, a_t, e_t, β_t, s_t.
+- **Pair s < t, direct effect exact.** Write Z_t = μ̃_t + R_t + λ_tU_st(E_s − e_s), with R_t linear. Then:
+  - Cov(R_t, z_s) = Σ_z[s,t] − λ_tU_stβ_sσ_s²;
+  - Var(R_t) = σ_t² − 2λ_tU_st(β_sΣ_z[s,t] + s_sG[t,s]) + λ_t²U_st²e_s(1 − e_s);
+  - a_s = μ̃_s/σ_s;
+  - a_t⁽ʸ⁾ = (μ̃_t + λ_tU_st(1{y = 0} − e_s))/√Var(R_t);
+  - ρ = Cov(R_t, z_s)/(σ_s√Var(R_t)).
+
+  The L0 cell formulas apply unchanged.
+- **Special cases:** with β ≡ 0, L1 is exactly L0; with κ = 0, it is exactly the 2PL.
+- **Still ignored:** u–u correlations and the non-Gaussian remainder.
+
+**Two steps with fixed rules (X6-D07).**
+- **Step 1, forward only.** Approximation check G0-1b on the Stage-0 datasets (same seeds). It passes only if, in **both E3 and E5**:
+  - L1's excess χ²/df is at most ¼ of L0's, on the feedback-active pairs and on the cross-session pairs;
+  - the mean absolute marginal error of later practice positions is ≤ 0.0085;
+  - E1 and E2 are unchanged, and E4 is no worse than L0.
+- **Step 2, only if Step 1 passes.** Analytic gradient, fits, and G0-3 re-run with **unchanged** thresholds, plus G0-4.
+  - If L1 passes G0-3, L1 becomes the primary FB model for Stage 1.
+- **Failure at either step:** STOP. Experiment 6 then closes with the population findings of L0 and L1, unless the owner chooses a descriptive L0 continuation. No further approximation levels are built in Experiment 6.
+- **The G0-3 check E[T_FB] < 5.16 is a conservative proxy.** H6a calibrates T_FB with a warp bootstrap simulated with the exact feedback generator, and that reproduces approximation artefacts in T\*. The check is kept as written.

@@ -4,6 +4,32 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H3: Stage 0 reviewed -> Sonnet builds L1 in two gated steps (2026-10-11)
+
+```text
+MODEL HANDOFF — Experiment 6 L1 fallback (Step 1 forward-only gate; Step 2 only if Step 1 passes)
+Completed (Opus 5.5): Stage-0 review X6-F07; erratum X6-D06 (error-latent covariance is first order in kappa); X6-D07 (L1 spec + rules); protocol addendum.
+  Owner chose: build L1, cheap check first. G0-3 thresholds unchanged.
+Next task (Sonnet 5.5):
+ STEP 1 (forward only):
+  1. feedback_model/fbmodel_l1.py: forward_template_l1(st, mu0, L, lt, bt, kappa, tau_D, iu, ju, beta_on=True) per the protocol addendum
+     (Sigma_X = (lt lt')*L + I; row recursion A[t,:] = e_t' + B[t,:t] A[:t,:], B[t,r] = lt_t U[r,t] beta_r, G = A diag(lt) U', sigma_t^2 = A[t] Sigma_X A[t]' + sum_r G[t,r]^2 s_r,
+     m_t, mut_t, a_t, e_t, beta_t = -phi(a_t)/sigma_t, s_t = e_t(1-e_t) - phi(a_t)^2; Sigma_z = A Sigma_X A' + G diag(s) G';
+     pair: CovR = Sigma_z[s,t] - lt_t U_st beta_s sigma_s^2, VarR = sigma_t^2 - 2 lt_t U_st (beta_s Sigma_z[s,t] + s_s G[t,s]) + lt_t^2 U_st^2 e_s(1-e_s),
+     a_s, a1, a0, rho as in the addendum); ObjectiveFB1 (ParamFB coordinates) with intermediates(); reuse _Static, cell_prob_table, cell_loglik.
+  2. Tests: beta_on=False gives L0's intermediates exactly (fbmodel.forward_template); kappa = 0 gives the 2PL exactly; cells sum to 1; VarR > 0 and sigma^2 > 0
+     on a grid (kappa in {-0.6, -0.25, 0.3}, several tau_D); full suite (X3-F06 known).
+  3. audit.approx_check: add label "L1" (keep "L0" and "no_feedback_term" for comparison) incl. marginals; CLI `python -m feedback_model approx --config
+     configs/experiment_06/stage0.yaml --out results/experiment_06/stage0b` (same datasets as Stage 0: seed 20266001, keys ("pop", cell)); approx.json + approx.md.
+  4. Apply the G0-1b rule (X6-D07) and record X6-F08. If it FAILS: STOP (handoff H4 to Opus).
+ STEP 2 (only if Step 1 passes): analytic reverse-mode gradient of L1 (finite-difference tests on all coordinate types; beta-off = L0 gradient; kappa = 0 = 2PL gradient);
+  fit_ext(kind="fb1"); audit with the L1 arm (B1-FB1, B2-FB1) on the same seeds (keep the Stage-0 results; write results/experiment_06/stage0b/points);
+  G0-3 (unchanged thresholds) and G0-4 for L1; report docs/experiment_06_stage0b_report.md; X6-F09+; handoff H4. STOP for the Opus review.
+Git: the owner runs it. Resume: `Switched to Sonnet; continue`.
+```
+
+---
+
 ## MODEL HANDOFF — H2: Stage 0 done, G0-3 NOT met -> Opus reviews (2026-10-11)
 
 ```text
