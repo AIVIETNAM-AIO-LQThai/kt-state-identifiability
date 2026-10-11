@@ -1,4 +1,6 @@
 """python -m feedback_model audit  --config configs/experiment_06/stage0.yaml [--out DIR] [--workers n]
+python -m feedback_model approx --config configs/experiment_06/stage0.yaml [--out results/experiment_06/stage0b] [--workers n]   (L1 step 1, G0-1b)
+python -m feedback_model audit_l1 --config configs/experiment_06/stage0.yaml [--out results/experiment_06/stage0b] [--workers n]   (L1 step 2: fits, G0-3, G0-4)
 python -m feedback_model report --config configs/experiment_06/stage0.yaml [--out DIR] [--md FILE]"""
 from __future__ import annotations
 
@@ -15,11 +17,11 @@ from pathlib import Path
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="feedback_model")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("audit", "report"):
+    for name in ("audit", "report", "approx", "audit_l1"):
         p = sub.add_parser(name)
         p.add_argument("--config", required=True)
-        p.add_argument("--out", default="results/experiment_06/stage0")
-        if name == "audit":
+        p.add_argument("--out", default="results/experiment_06/stage0b" if name in ("approx", "audit_l1") else "results/experiment_06/stage0")
+        if name in ("audit", "approx", "audit_l1"):
             p.add_argument("--workers", type=int, default=5)
         else:
             p.add_argument("--md", default=None)
@@ -27,6 +29,10 @@ def main(argv=None) -> int:
     from kt_trial.config import load_yaml
     from . import audit
     ac = load_yaml(args.config)
+    if args.cmd == "audit_l1":
+        return audit.run_audit_l1(ac, args.out, workers=args.workers)
+    if args.cmd == "approx":
+        return audit.run_approx(ac, args.out, workers=args.workers)
     if args.cmd == "audit":
         threads = {k: os.environ.get(k) for k in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")}
         print("threads", threads)

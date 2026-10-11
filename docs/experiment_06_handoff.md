@@ -4,6 +4,27 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H4: L1 built and audited, G0-3 NOT met (1 of 7 checks) -> Opus reviews (2026-10-11)
+
+```text
+MODEL HANDOFF — Experiment 6: L1 REVIEW (X6-D07 STOP rule: G0-3 not met; decision is Opus's and the owner's)
+Completed (Sonnet 5.5): Step 1 (forward) and Step 2 (gradient, fits, audit) of X6-D07; records X6-F08..F11; docs/experiment_06_stage0b_report.md; results/experiment_06/stage0b/.
+  Code: feedback_model/fbmodel_l1.py (forward_template_l1, backward_template_l1, ObjectiveFB1), fit.py (kind "fb1"), audit.py (approx_check with_l1, approx_point/run_approx/approx_summary, run_point_l1/run_audit_l1/summarize_l1), cli.py (approx, audit_l1); tests/test_feedback_model_l1.py (15 tests).
+  Full suite: 181 passed, X3-F06 deselected.
+Results: G0-1b PASSED (excess chi2/df L1/L0 0.014-0.023 in E3/E5, limit 0.25; later-practice marginal error 0.0040, limit 0.0085; E1/E2 identical; E4 better).
+  G0-3 (unchanged thresholds): 6 of 7 checks pass. sigma2_F* E1 0.1597 / E3 0.0085 / E5 0.1489 (|error| 0.011); kappa* -0.252 (E3), -0.251 (E5); tau_D* 10.35 / 10.30 (truth 10).
+  FAILED: E3 E[T_FB](N = 1000) = 27.9 against 5.16 (L0: 29.0). The learner-level footprint of L0 is gone (sigma2_r 0.034, tau_R 5.4, sd log lambda 0.014).
+  G0-4: SE kappa at N = 1000 0.0143 (E3) / 0.0144 (E5); SE sigma2_F L1/2PL 1.09 (E1), 1.23 (E2), 1.09 (E5); corr(sigma2_F, kappa) +0.41 to +0.58; fits 627-746 s (1.7-4.5 x 2PL); tau_D unidentified at kappa ~ 0 (E1, E2), B2-FB1 E2 hessian_not_pd.
+Questions for Opus / the owner (X6-D07 says: failure => STOP; Experiment 6 closes with the L0/L1 population findings unless the owner chooses otherwise):
+  (1) The single failed check is E[T_FB] against the 2PL-null q95, which X6-F07 called a conservative proxy: E3 sigma2_F* is 0.0085 (6 % of the 2PL value 0.145), but T_FB is still 27.9 at N = 1000 (8.4 at N = 300). Is the right next step a warp bootstrap of the T_FB null at population level for E3 (it needs a bootstrap of B1-FB1 at the fitted values, simulated with the exact feedback generator) to see whether T* reproduces the artefact? That is a protocol/threshold question, not mine.
+  (2) If the owner continues with L1: SE of sigma2_F is 9-23 % larger than the 2PL in E1, E2, E5; tau_D certificate rule at kappa ~ 0 and the H6e residual diagnostic at the FB fit are open (X6-D07 defers them to this review).
+  (3) Budget: a fit costs 10-12 min on N_big pair counts; Stage 1 sizes are not yet estimated for L1.
+Not done: Stage 1 (jobs, runner, rules, pilot); the T_FB null calibration; the H6e diagnostic.
+Next (Opus 5.5, Plan Mode): L1 review. Git: the owner runs it. Resume: `Switched to Opus; review L1`.
+```
+
+---
+
 ## MODEL HANDOFF — H3: Stage 0 reviewed -> Sonnet builds L1 in two gated steps (2026-10-11)
 
 ```text

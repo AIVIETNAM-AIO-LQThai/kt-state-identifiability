@@ -35,6 +35,7 @@ from state_dependence.simulator import simulate_feedback
 
 from .etamodel import ParamEta
 from .fbmodel import ObjectiveFB, ParamFB, cell_loglik, cell_prob_table, forward_template
+from .fbmodel_l1 import ObjectiveFB1, forward_template_l1
 from .fit import active_coords, fit_ext, grad_hess
 
 N_ITEMS = 48
@@ -67,7 +68,7 @@ def true_x(pm: ParamFB, cfg: dict, feedback: dict | None, templates, ids) -> np.
     return pm.pack(th, b, np.ones(N_ITEMS), kappa, tau_D)
 
 
-def marginal_check(obj: ObjectiveFB, x, Y: np.ndarray, tid: np.ndarray) -> dict:
+def marginal_check(obj: ObjectiveFB, x, Y: np.ndarray, tid: np.ndarray, fwd=forward_template) -> dict:
     """Empirical success rate of every position against the model's Phi(a_t) at x (L0 mean-field marginals), by position category.
     z = (empirical - model) / binomial SE; reported as mean |error| and RMS z."""
     pm = obj.pm
@@ -79,7 +80,7 @@ def marginal_check(obj: ObjectiveFB, x, Y: np.ndarray, tid: np.ndarray) -> dict:
     for g, tpl in enumerate(obj.templates):
         t0 = copy.copy(tpl); t0.b = np.zeros(T)
         mu0, V0 = latent_moments(t0, th)
-        _, ctx = forward_template(obj.static[g], mu0, V0 - np.eye(T), lam[obj.ids[g]], b[obj.ids[g]], kappa, tau_D, obj.pc.iu, obj.pc.ju)
+        _, ctx = fwd(obj.static[g], mu0, V0 - np.eye(T), lam[obj.ids[g]], b[obj.ids[g]], kappa, tau_D, obj.pc.iu, obj.pc.ju)
         pm_t = ndtr(ctx["a"])
         sel = tid == g
         emp = Y[sel].mean(0); n = sel.sum()
@@ -91,7 +92,7 @@ def marginal_check(obj: ObjectiveFB, x, Y: np.ndarray, tid: np.ndarray) -> dict:
                 "rms_z": float(np.sqrt(np.mean([z * z for _, z in v])))} for k, v in out.items() if v}
 
 
-def approx_check(cfg: dict, feedback: dict | None, templates, ids, pc, Y=None, tid=None) -> dict:
+def approx_check(cfg: dict, feedback: dict | None, templates, ids, pc, Y=None, tid=None, with_l1: bool = False) -> dict:
     """chi2/df per pair of the empirical pair-cell frequencies against the model cell probabilities at the true parameters, for L0 and for
     kappa = 0 (no feedback term), by pair category and feedback lag. Expected value 1 for an exact model (plus sampling noise of the frequencies).
     With (Y, tid) also the marginal check of the position success rates."""
@@ -114,8 +115,10 @@ def approx_check(cfg: dict, feedback: dict | None, templates, ids, pc, Y=None, t
         lag = np.where(act, t.time[ju] - t.time[iu], np.nan)
         cats.setdefault("lag", []).append(lag)
     cats = {k: np.stack(v) for k, v in cats.items()}
-    for label, xx in (("L0", x), ("no_feedback_term", x0)):
-        P = cell_prob_table(*obj.intermediates(xx))
+    obj1 = ObjectiveFB1(pm, templates, pc, ids)
+    labels = [("L0", x, obj), ("no_feedback_term", x0, obj)] + ([("L1", x, obj1)] if with_l1 else [])
+    for label, xx, ob in labels:
+        P = cell_prob_table(*ob.intermediates(xx))
         P = np.maximum(P, 1e-12)
         chi = nl[:, None] * ((freq - P) ** 2 / P).sum(-1)                       # (G, P)  ~ chi2_3 per pair if exact
         kl = (freq * np.log(np.maximum(freq, 1e-300) / P)).sum(-1)
@@ -135,6 +138,8 @@ def approx_check(cfg: dict, feedback: dict | None, templates, ids, pc, Y=None, t
     if Y is not None:
         stat["marginals_L0"] = marginal_check(obj, x, Y, tid)
         stat["marginals_no_feedback_term"] = marginal_check(obj, x0, Y, tid)
+        if with_l1:
+            stat["marginals_L1"] = marginal_check(obj1, x, Y, tid, fwd=forward_template_l1)
     return stat
 
 
@@ -370,3 +375,238 @@ def markdown(S: dict) -> str:
                 L.append(f"| {cid} N={N} | {lab} | {f(d.get('sigma2_F'), 4)} | {f(d.get('kappa'), 4)} | {f(d.get('tau_D'), 4)} | {f(d.get('corr_sigma2F_kappa'), 2)} |")
     L += ["", f"## G0-2: {S['gates']['G0-2']}", "", f"## G0-3: {S['gates']['G0-3']}", ""]
     return "\n".join(L)
+
+
+# --------------------------------------------------------------------------------------------- Step 1 of L1: approximation check G0-1b (X6-D07)
+CAT = ("fb_active", "within_session_other", "cross_session")
+STAGE0_DIR = "results/experiment_06/stage0"
+
+
+def approx_point(cell: dict, ac: dict) -> dict:
+    """Stage-0 dataset of the cell (same seed and keys), approximation check with the L1 label added."""
+    t0 = time.time()
+    cfg = copy.deepcopy(load_scenario(cell["base"]))
+    ts = build_templates(cfg)
+    G = len(ts)
+    ids = item_ids(ts, cfg["design"]["items_per_skill"])
+    ms, Nb = ac["master_seed"], int(ac["N_big"])
+    ds = simulate_feedback(cfg, Nb, ("pop", cell["id"]), ms, ts, lam=np.ones(N_ITEMS), ids=ids, feedback=cell["feedback"])
+    pc = pair_counts(ds.Y, ds.template_id, G)
+    chk = approx_check(cfg, cell["feedback"], ts, ids, pc, ds.Y, ds.template_id, with_l1=True)
+    return {"cell": cell["id"], "feedback": cell["feedback"], "N_big": Nb, "mean_success": float(ds.Y.mean()), "approx_check": chk,
+            "runtime": time.time() - t0}
+
+
+def run_approx(ac: dict, out_dir, workers: int = 5, log=print) -> int:
+    out = Path(out_dir); (out / "points").mkdir(parents=True, exist_ok=True)
+    todo = [c for c in CELLS if not (out / "points" / f"{c['id']}.json").exists()]
+    log(f"{len(todo)} cells to run")
+    if todo:
+        with ProcessPoolExecutor(max_workers=workers) as ex:
+            futs = {ex.submit(approx_point, c, ac): c for c in todo}
+            for fut in as_completed(futs):
+                c = futs[fut]
+                try:
+                    r = fut.result()
+                    write_json_atomic(out / "points" / f"{c['id']}.json", r)
+                    log(f"  {c['id']} done in {r['runtime']:.0f}s")
+                except Exception as e:
+                    log(f"  {c['id']} FAILED: {e!r}")
+    S = approx_summary(out)
+    (out / "approx.md").write_text(approx_markdown(S), encoding="utf-8", newline="\n")
+    return 0
+
+
+def approx_summary(out_dir) -> dict:
+    """Apply the G0-1b rule of X6-D07 (thresholds fixed before any L1 number was seen)."""
+    out = Path(out_dir)
+    pts = {f.stem: read_json(f) for f in sorted((out / "points").glob("*.json"))}
+    rows, repro = {}, {}
+    for cid, r in pts.items():
+        ck = r["approx_check"]
+        rows[cid] = {"mean_success": r["mean_success"]}
+        for lab in ("L0", "L1", "no_feedback_term"):
+            rows[cid][lab] = {c: ck[lab][c]["chi2_per_df"] for c in CAT}
+        for lab in ("L0", "L1"):
+            rows[cid][f"marg_{lab}"] = {k: ck[f"marginals_{lab}"][k] for k in ("practice_later", "session_start", "probe")}
+        p0 = Path(STAGE0_DIR, "points", f"{cid}.json")
+        if p0.exists():                                                # the regenerated L0 numbers must reproduce Stage 0
+            s0 = read_json(p0)["approx_check"]
+            repro[cid] = max(abs(s0["L0"][c]["chi2_per_df"] - ck["L0"][c]["chi2_per_df"]) for c in CAT)
+    gates = {}
+    for cid in ("E3", "E5"):
+        if cid not in rows:
+            continue
+        x = rows[cid]
+        g = {}
+        for c in ("fb_active", "cross_session"):
+            ex0, ex1 = x["L0"][c] - 1.0, x["L1"][c] - 1.0
+            g[f"excess_{c}"] = {"L0": ex0, "L1": ex1, "ratio": ex1 / ex0 if ex0 > 0 else None, "ok": bool(ex1 <= 0.25 * ex0)}
+        m1 = x["marg_L1"]["practice_later"]["mean_abs_error"]
+        g["marginal_later_practice"] = {"L0": x["marg_L0"]["practice_later"]["mean_abs_error"], "L1": m1, "limit": 0.0085, "ok": bool(m1 <= 0.0085)}
+        gates[cid] = g
+    for cid in ("E1", "E2"):                                           # kappa = 0: L1 is the 2PL, so unchanged to rounding
+        if cid in rows:
+            d = max(abs(rows[cid]["L1"][c] - rows[cid]["L0"][c]) for c in CAT)
+            gates[cid] = {"max_abs_change_chi2_per_df": d, "ok": bool(d <= 1e-6)}
+    if "E4" in rows:                                                   # strictly: L1 no larger than L0 in every category
+        d = {c: rows["E4"]["L1"][c] - rows["E4"]["L0"][c] for c in CAT}
+        gates["E4"] = {"L1_minus_L0": d, "ok": bool(all(v <= 0.0 for v in d.values()))}
+    complete = all(c in gates for c in ("E1", "E2", "E3", "E4", "E5"))
+    ok = complete and all((all(v["ok"] for v in g.values() if isinstance(v, dict)) if cid in ("E3", "E5") else g["ok"]) for cid, g in gates.items())
+    S = {"rule": "G0-1b (X6-D07)", "cells": rows, "gates": gates, "stage0_L0_reproduction_max_abs_diff": repro, "complete": complete,
+         "G0_1b_passed": bool(ok)}
+    write_json_atomic(out / "approx.json", S)
+    return S
+
+
+def approx_markdown(S: dict) -> str:
+    L = ["# Experiment 6, Step 1 of L1: approximation check G0-1b (X6-D07)", "",
+         f"**G0-1b: {'PASSED' if S['G0_1b_passed'] else 'NOT passed'}** (complete: {S['complete']}). "
+         "Rule: in E3 and E5, excess chi2/df of L1 <= 1/4 of L0's on the feedback-active and cross-session pairs, later-practice marginal error <= 0.0085; "
+         "E1/E2 unchanged; E4 no worse than L0 (strict).", "",
+         "## chi2/df per pair (expected 1 for an exact model)", "",
+         "| cell | model | fb_active | within_session_other | cross_session |", "|---|---|---|---|---|"]
+    for cid, x in S["cells"].items():
+        for lab in ("no_feedback_term", "L0", "L1"):
+            L.append(f"| {cid} | {lab} | " + " | ".join(f"{x[lab][c]:.3f}" for c in CAT) + " |")
+    L += ["", "## Marginal success-rate error by position category (mean |empirical - model|; RMS z)", "",
+          "| cell | model | later practice | session start | probe |", "|---|---|---|---|---|"]
+    for cid, x in S["cells"].items():
+        for lab in ("L0", "L1"):
+            mm = x[f"marg_{lab}"]
+            L.append(f"| {cid} | {lab} | " + " | ".join(f"{mm[k]['mean_abs_error']:.4f}; {mm[k]['rms_z']:.1f}" for k in ("practice_later", "session_start", "probe")) + " |")
+    L += ["", "## Gate evaluation", ""]
+    for cid, g in S["gates"].items():
+        L.append(f"- **{cid}**: " + "; ".join(f"{k}: {v}" for k, v in g.items()))
+    L += ["", f"Stage-0 L0 numbers reproduced by the regenerated datasets (max |diff| of chi2/df): {S['stage0_L0_reproduction_max_abs_diff']}", ""]
+    return "\n".join(L)
+
+
+# --------------------------------------------------------------------------------------------- Step 2 of L1: population audit with the L1 arm (X6-D07)
+def run_point_l1(cell: dict, ac: dict) -> dict:
+    """Same dataset, 2PL fits (warm starts and reference) and Godambe settings as Stage 0, with B1-FB1 / B2-FB1 in place of the L0 arm."""
+    t0 = time.time()
+    cfg = copy.deepcopy(load_scenario(cell["base"]))
+    cfg_fit = dict(cfg["fit"], n_starts=ac.get("n_starts", 5))
+    cfg_fit["gtol_abs"] = cfg_fit["gtol_abs"] * TOL_SCALE
+    cfg_fit["newton_tol"] = cfg_fit["newton_tol"] * TOL_SCALE
+    ts = build_templates(cfg)
+    K, G = cfg["design"]["n_skills"], len(ts)
+    ids = item_ids(ts, cfg["design"]["items_per_skill"])
+    ms, Nb = ac["master_seed"], int(ac["N_big"])
+    skey = ("pop", cell["id"])
+    ds = simulate_feedback(cfg, Nb, skey, ms, ts, lam=np.ones(N_ITEMS), ids=ids, feedback=cell["feedback"])
+    pc = pair_counts(ds.Y, ds.template_id, G)
+    res = {"cell": cell["id"], "base": cell["base"], "feedback": cell["feedback"], "N_big": Nb, "mean_success": float(ds.Y.mean())}
+    f1 = fit_2pl("B1", ts, pc, cfg_fit, K, ids, N_ITEMS, skey, ms)
+    f2 = fit_2pl("B2", ts, pc, cfg_fit, K, ids, N_ITEMS, skey, ms, warm=(Theta.from_dict(f1["theta"]), f1["b"], f1["lam"]), null_fit=f1)
+    fb1 = fit_ext("fb1", "B1", ts, pc, cfg_fit, K, ids, N_ITEMS, skey, ms, warm=f1)
+    fb2 = fit_ext("fb1", "B2", ts, pc, cfg_fit, K, ids, N_ITEMS, skey, ms, warm=fb1, null_fit=fb1)
+    res["fits"] = {"B1": _slim(f1), "B2": _slim(f2), "B1_FB1": _slim(fb1), "B2_FB1": _slim(fb2)}
+    res["fit_runtime"] = {k: v.get("runtime") for k, v in res["fits"].items()}
+    ok = lambda *fs: all(f["status"] != "failed" for f in fs)
+    if ok(f1, f2):
+        res["T_per_learner_2PL"] = float(2.0 * (f2["ll"] - f1["ll"]) / Nb)
+    if ok(fb1, fb2):
+        res["T_per_learner_FB1"] = float(2.0 * (fb2["ll"] - fb1["ll"]) / Nb)
+        dsJ = simulate_feedback(cfg, int(ac["N_J"]), ("popJ", cell["id"]), ms, ts, lam=np.ones(N_ITEMS), ids=ids, feedback=cell["feedback"])
+        pm = ParamFB("B2", K, N_ITEMS)
+        obj = ObjectiveFB1(pm, ts, pc, ids)
+        xfb = _x_for(pm, fb2, True)
+        res["godambe_FB1"] = godambe(obj, xfb, active_coords(pm, xfb, cfg_fit), cfg_fit, dsJ.Y, dsJ.template_id, ac["N_list"], len(pc.iu))
+    res["runtime"] = time.time() - t0
+    return res
+
+
+def run_audit_l1(ac: dict, out_dir, workers: int = 5, log=print) -> int:
+    out = Path(out_dir); (out / "points_l1").mkdir(parents=True, exist_ok=True)
+    todo = [c for c in CELLS if not (out / "points_l1" / f"{c['id']}.json").exists()]
+    log(f"{len(todo)} cells to run")
+    if todo:
+        with ProcessPoolExecutor(max_workers=workers) as ex:
+            futs = {ex.submit(run_point_l1, c, ac): c for c in todo}
+            for fut in as_completed(futs):
+                c = futs[fut]
+                try:
+                    r = fut.result()
+                    write_json_atomic(out / "points_l1" / f"{c['id']}.json", r)
+                    log(f"  {c['id']} done in {r['runtime']:.0f}s")
+                except Exception as e:
+                    log(f"  {c['id']} FAILED: {e!r}")
+    S = summarize_l1(ac, out)
+    (out / "summary_l1.md").write_text(markdown_l1(S), encoding="utf-8", newline="\n")
+    return 0
+
+
+def summarize_l1(ac: dict, out_dir) -> dict:
+    """G0-3 on the L1 fits with the unchanged `_gates` thresholds (the L1 arm is presented to `_gates` under the keys B2_FB / E_T_FB), next to the
+    Stage-0 L0 rows."""
+    out = Path(out_dir)
+    pts = {f.stem: read_json(f) for f in sorted((out / "points_l1").glob("*.json"))}
+    s0 = read_json(Path(STAGE0_DIR) / "summary.json")
+    ref = null_reference(ac["null_reference"], ac["N_list"])
+    rows = {}
+    for cid, r in pts.items():
+        fits = r["fits"]
+        row = {"feedback": r["feedback"]}
+        for key, dst in (("B2", "B2"), ("B2_FB1", "B2_FB")):
+            f = fits[key]
+            if f["status"] == "failed":
+                continue
+            th = f["theta"]
+            row[dst] = {"sigma2_F": th["sigma2_F"], "tau_F": th["tau_F"], "tau_R": th["tau_R"], "sigma2_r": th["sigma2_r"], "lam_sd_log": f["lam_sd_log"],
+                        "kappa": f.get("kappa"), "tau_D": f.get("tau_D"), "converged": f.get("converged"), "flags": f.get("flags"), "runtime": f.get("runtime")}
+        row["B1_FB"] = {k: fits["B1_FB1"].get(k) for k in ("kappa", "tau_D", "converged", "flags", "runtime")}
+        for lab in ("2PL", "FB"):
+            t = r.get("T_per_learner_2PL" if lab == "2PL" else "T_per_learner_FB1")
+            row[f"E_T_{lab}"] = None if t is None else {str(N): t * N for N in ac["N_list"]}
+            row[f"E_T_{lab}_over_q95"] = None if t is None else {str(N): (t * N / ref[str(N)]["q95"] if ref[str(N)]["q95"] else None) for N in ac["N_list"]}
+        row["godambe_FB1"] = r.get("godambe_FB1")
+        rows[cid] = row
+    G = _gates(rows, ref)["G0-3"]
+    summary = {"G0-3_L1": G, "G0-3_L0_stage0": s0["gates"]["G0-3"], "cells": rows,
+               "stage0_cells": {k: {m: v.get(m) for m in ("B2", "B2_FB", "godambe_FB", "godambe_2PL")} for k, v in s0["cells"].items()},
+               "null_reference_q95": ref, "N_big": ac["N_big"], "N_J": ac["N_J"]}
+    write_json_atomic(out / "summary_l1.json", summary)
+    return summary
+
+
+def markdown_l1(S: dict) -> str:
+    f = lambda x, d=3: "NA" if x is None else f"{x:.{d}f}"
+    L = ["# Experiment 6 Stage 0b: population audit of the L1 arm (numbers only)", "",
+         f"N_big = {S['N_big']}, N_J = {S['N_J']}; same datasets, 2PL fits and thresholds as Stage 0; B1-FB1 / B2-FB1 in place of the L0 arm.", "",
+         "## G0-3 (unchanged thresholds)", "",
+         f"- **L1: {'MET' if S['G0-3_L1']['all_pass'] else 'NOT met'}**; checks {S['G0-3_L1']['checks']}",
+         f"- values (L1): {S['G0-3_L1']['values']}",
+         f"- Stage-0 L0 for comparison: {'MET' if S['G0-3_L0_stage0']['all_pass'] else 'NOT met'}; values {S['G0-3_L0_stage0']['values']}", "",
+         "## Pseudo-true values, B2 arms: 2PL, L0 (Stage 0), L1", "",
+         "| cell | model | sigma2_F* | tau_F | kappa* | tau_D* | sigma2_r | tau_R | sd log lambda | E[T] N=1000 | converged | flags |",
+         "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    s0 = S["stage0_cells"]
+    for cid, r in S["cells"].items():
+        l0 = (s0.get(cid) or {}).get("B2_FB") or {}
+        L.append(f"| {cid} | 2PL | {f(r['B2']['sigma2_F'])} | {f(r['B2']['tau_F'], 2)} | NA | NA | {f(r['B2']['sigma2_r'], 3)} | {f(r['B2']['tau_R'], 2)} | "
+                 f"{f(r['B2']['lam_sd_log'], 3)} | {f((r['E_T_2PL'] or {}).get('1000'), 1)} | {r['B2']['converged']} | |")
+        if l0:
+            L.append(f"| {cid} | L0 | {f(l0['sigma2_F'])} | {f(l0['tau_F'], 2)} | {f(l0['kappa'])} | {f(l0['tau_D'], 2)} | NA | {f(l0['tau_R'], 2)} | NA | NA | "
+                     f"{l0['converged']} | {', '.join(l0['flags'] or [])} |")
+        m = r["B2_FB"]
+        L.append(f"| {cid} | L1 | {f(m['sigma2_F'])} | {f(m['tau_F'], 2)} | {f(m['kappa'])} | {f(m['tau_D'], 2)} | {f(m['sigma2_r'], 3)} | {f(m['tau_R'], 2)} | "
+                 f"{f(m['lam_sd_log'], 3)} | {f((r['E_T_FB'] or {}).get('1000'), 1)} | {m['converged']} | {', '.join(m['flags'] or [])} |")
+    L += ["", "## Runtimes (s)", "", "| cell | B2 (2PL) | B1-FB1 | B2-FB1 | B2-FB1 / B2 |", "|---|---|---|---|---|"]
+    for cid, r in S["cells"].items():
+        b2, b1f, b2f = r["B2"]["runtime"], r["B1_FB"]["runtime"], r["B2_FB"]["runtime"]
+        L.append(f"| {cid} | {f(b2, 0)} | {f(b1f, 0)} | {f(b2f, 0)} | {f(b2f / b2 if b2 else None, 2)} |")
+    L += ["", "## Godambe SEs of the L1 fit (N = 300 / 1000; SE of tau_D on the log scale) against the 2PL (Stage 0)", "",
+          "| cell | model | SE sigma2_F | SE kappa | SE log tau_D | corr(sigma2_F, kappa) |", "|---|---|---|---|---|---|"]
+    for cid, r in S["cells"].items():
+        g1, g2 = r.get("godambe_FB1"), (s0.get(cid) or {}).get("godambe_2PL")
+        for N in ("300", "1000"):
+            if g2:
+                d = g2[N]
+                L.append(f"| {cid} N={N} | 2PL | {f(d.get('sigma2_F'), 4)} | NA | NA | NA |")
+            if g1:
+                d = g1[N]
+                L.append(f"| {cid} N={N} | L1 | {f(d.get('sigma2_F'), 4)} | {f(d.get('kappa'), 4)} | {f(d.get('tau_D'), 4)} | {f(d.get('corr_sigma2F_kappa'), 2)} |")
+    return "\n".join(L) + "\n"

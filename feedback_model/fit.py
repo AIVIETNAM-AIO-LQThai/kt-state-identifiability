@@ -16,6 +16,7 @@ from discrimination_free.fit import (B_JITTER_SD, EXTREME_LOG_LAMBDA, POLISH_WIN
 
 from .etamodel import ObjectiveEta, ParamEta
 from .fbmodel import ObjectiveFB, ParamFB
+from .fbmodel_l1 import ObjectiveFB1
 
 KAPPA_OFF = 5e-3
 FB_START_GRID = [(-0.15, 8.0), (-0.30, 2.0), (0.0, 20.0), (-0.05, 5.0), (-0.20, 12.0)]       # (kappa, tau_D) per start
@@ -116,11 +117,12 @@ def polish_starts(pm, obj, runs, cfg_fit) -> None:
 
 def fit_ext(kind: str, model: str, templates, pc, cfg_fit: dict, K: int, ids: np.ndarray, n_items: int, seed_keys: tuple, master_seed: int,
             warm: dict | None = None, null_fit: dict | None = None, xcov: np.ndarray | None = None) -> dict:
-    """kind 'fb' (kappa, tau_D) or 'eta'. `warm` = a 2PL or smaller-FB fit dict (theta, b, lam[, kappa, tau_D]); `null_fit` = the B1-FB fit (embedded-null
+    """kind 'fb' (L0), 'fb1' (L1; both with kappa, tau_D) or 'eta'. `warm` = a 2PL or smaller-FB fit dict (theta, b, lam[, kappa, tau_D]); `null_fit` = the B1-FB fit (embedded-null
     candidate for B2-FB)."""
     t0 = time.time()
-    pm = ParamFB(model, K, n_items) if kind == "fb" else ParamEta(model, K, n_items)
-    obj = ObjectiveFB(pm, templates, pc, ids) if kind == "fb" else ObjectiveEta(pm, templates, pc, ids, xcov)
+    isfb = kind in ("fb", "fb1")
+    pm = ParamFB(model, K, n_items) if isfb else ParamEta(model, K, n_items)
+    obj = (ObjectiveFB(pm, templates, pc, ids) if kind == "fb" else ObjectiveFB1(pm, templates, pc, ids)) if isfb         else ObjectiveEta(pm, templates, pc, ids, xcov)
     rng = rng_for(master_seed, f"fit_{kind}", model, *seed_keys)
     th_warm = Theta.from_dict(warm["theta"]) if warm is not None else None
     b0 = np.asarray(warm["b"], float) if warm is not None else start_difficulties(templates, ids, pc, default_theta(cfg_fit, K), n_items)
@@ -130,7 +132,7 @@ def fit_ext(kind: str, model: str, templates, pc, cfg_fit: dict, K: int, ids: np
     for i, xt in enumerate(make_starts(model, pm.base, cfg_fit, K, rng, th_warm)):
         bj = b0 if i == 0 else b0 + rng.normal(0.0, B_JITTER_SD, size=b0.shape)
         wj = w0 if i == 0 else w0 + rng.normal(0.0, W_JITTER_SD, size=w0.shape)
-        if kind == "fb":
+        if isfb:
             k0, td0 = FB_START_GRID[i % len(FB_START_GRID)]
             if i == 0 and warm is not None and "kappa" in warm:
                 k0, td0 = warm["kappa"], warm["tau_D"]
@@ -150,7 +152,7 @@ def fit_ext(kind: str, model: str, templates, pc, cfg_fit: dict, K: int, ids: np
     x = np.array(best["x"])
     theta = pm.x_to_theta(x)
     fell_back = False
-    if kind == "fb" and model == "B2" and null_fit is not None and null_fit.get("status") != "failed" and null_fit["ll"] > best["ll"] + 1e-9:
+    if isfb and model == "B2" and null_fit is not None and null_fit.get("status") != "failed" and null_fit["ll"] > best["ll"] + 1e-9:
         theta = embed(Theta.from_dict(null_fit["theta"]), "B2").copy(sigma2_F=0.0)
         x = pm.pack(theta, null_fit["b"], null_fit["lam"], null_fit["kappa"], null_fit["tau_D"])
         best = dict(best, ll=null_fit["ll"], grad_norm=float("nan"), grad_inf=float("nan"), converged=True, message="embedded_null")
@@ -190,7 +192,7 @@ def fit_ext(kind: str, model: str, templates, pc, cfg_fit: dict, K: int, ids: np
         flags.append("tau_F_not_identified(sigma2_F=0)")
     if ridge_flag(model, theta, tol):
         flags.append("white_noise_ridge")
-    if kind == "fb":
+    if isfb:
         kappa, tau_D = pm.extra(x)
         if abs(kappa) <= KAPPA_OFF:
             flags.append("tau_D_not_identified(kappa~0)")
