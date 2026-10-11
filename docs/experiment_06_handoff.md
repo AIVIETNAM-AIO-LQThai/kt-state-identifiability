@@ -4,6 +4,21 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## MODEL HANDOFF — H2: Stage 0 done, G0-3 NOT met -> Opus reviews (2026-10-11)
+
+```text
+MODEL HANDOFF — Experiment 6: STAGE-0 GATE REVIEW (G0-3 failed: stop per X6-D04)
+Completed (Sonnet 5.5): feedback_model/ (fbmodel, etamodel, fit, audit, cli), tests (7 new; full suite 166 passed, X3-F06 deselected), Stage-0 audit (5 cells, N_big = 200,000, 1.7 CPU-h), docs/experiment_06_stage0_report.md, X6-F01..F06.
+Results: G0-1 met (kappa = 0 identity, gradients, cells); G0-2 B2+eta fails to remove the misattribution (sigma2_F* 0.143 E3, 0.408 E5); G0-3 NOT met: E3 sigma2_F* 0.0204 (limit 0.02), E3 E[T_FB] N = 1000 = 29.0 (reference q95 5.16, coarse), E5 sigma2_F* 0.201 (|error| 0.041 > 0.03); passed E1 and kappa within 20 %.
+  The FB model removes 86 % (E3) and 84 % (E5) of the 2PL misattribution, is exact for E4 (sigma2_F* 0, kappa* -0.1006, tau_D* 2.01), recovers kappa* -0.262 / -0.257 and tau_D* 10.97 / 10.69 (truth -0.25, 10); precision cost nil (SE ratio 0.97-1.04 in E1, E5). A smoke fit at N = 1000 (E3-type, one dataset) gave kappa-hat -0.258, T_FB = 0.
+  Approximation check: L0 is exact in E1/E2, nearly exact in E4 (chi2/df 1.3-1.4), not in E3/E5 (95-160; marginals of later practice positions off by 0.017). The neglected covariance between earlier errors and the latent state is FIRST order in kappa (protocol 1.3 (d) said second order - wrong).
+Questions for Opus / the owner: (1) accept L0 with its residual (E3 0.020, E5 +0.041 at population level) or build L1 (probit linearisation of earlier errors, X6-D02) - the strong-feedback cells are the S7 strength; (2) if L0: how to read G0-3 (the failed E3 limit is 0.0004 over, E5 0.011 over; the T_FB null is uncalibrated, so the E[T_FB] check needs a warp bootstrap, which Stage 1 will give) and whether the hypotheses H6a/H6b thresholds should be relaxed (e.g. bias within 0.05 in E5 would pass: 0.041); (3) the H6e residual diagnostic at the FB fit is not built (needs an eta column in the FB derivative arrays; finite-difference route available); (4) sizes: FB fits take 0.65-2.2 x a 2PL fit, Godambe SEs in the report; (5) E2/E1 FB fits have tau_D unidentified (flag, secondary optima, one hessian_not_pd) - how Stage 1 should treat it.
+Not done: Stage 1 (jobs, runner, rules, pilot); nothing beyond Stage 0.
+Next (Opus 5.5, Plan Mode): Stage-0 review. Git: the owner runs it. Resume: `Switched to Opus; review stage 0`.
+```
+
+---
+
 ## MODEL HANDOFF — H1: protocol approved -> Sonnet builds Stage 0 (2026-10-11)
 
 ```text
