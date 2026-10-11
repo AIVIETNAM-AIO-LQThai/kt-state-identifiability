@@ -98,7 +98,13 @@ Conclusion: the F test detects within-session dependence, not a latent state. Re
 
 Can F be recovered and tested once outcome feedback is part of the fitted model? The approach is a feedback-aware pairwise composite likelihood
 (approximation L0: exact direct pair effect, mean-field remainder) in the package `feedback_model/`, compared with the 2PL model and with a
-schedule-term model (B2+η). **In progress**; protocol `docs/experiment_06_protocol.md`, decisions `docs/experiment_06_decisions.md`.
-Stage 0 (population audit, `docs/experiment_06_stage0_report.md`) found L0 leaves a residual under strong feedback; the fallback L1 (probit
-linearisation, `docs/experiment_06_stage0b_report.md`) removes most of it (σ²_F* 0.145 → 0.0085 in E3) but one G0-3 check is still not met; Stage 1 has not started.
+schedule-term model (B2+η), and the fallback L1 (probit linearisation of earlier errors). Protocol `docs/experiment_06_protocol.md`, decisions
+`docs/experiment_06_decisions.md`, final report `docs/experiment_06_final_report.md`.
+
+**Closed at the population stage** under the pre-registered stop rule (X6-D08); no finite-sample run, so H6a–H6e were not tested.
+At N_big = 200,000:
+- a schedule term removes none of the misattribution;
+- feedback in the likelihood removes most of it: σ²_F\* in E3 (feedback only) 0.145 → 0.020 (L0) → 0.0085 (L1); E5 bias +0.255 → +0.041 → −0.011;
+- κ and τ_D are recovered, and F without feedback is unbiased (SE +9 % with L1);
+- L1 leaves a small persistent residual that the F test still detects at N = 1000 against the 2PL null (E[T] 27.9 > 5.16), which ended the experiment.
 

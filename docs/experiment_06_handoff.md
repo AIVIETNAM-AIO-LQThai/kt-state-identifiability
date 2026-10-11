@@ -4,6 +4,19 @@ Newest entry first. Each entry is self-contained.
 
 ---
 
+## H5: L1 reviewed, Experiment 6 closed (2026-10-11)
+
+```text
+CLOSURE — Experiment 6 (owner chose "Close Exp 6"; X6-F12, X6-D08)
+Completed (Opus 5.5): L1 review X6-F12; closure X6-D08; docs/experiment_06_final_report.md; README results; Stage-0b report wording fix.
+Outcome: population-level only. L1 removes 94 % of the E3 misattribution and the E5 bias (+0.255 -> -0.011); G0-3 not met on the E3 E[T_FB] proxy (27.9 > 5.16);
+  stop rule applied. H6a-H6e not tested.
+Next: none scheduled. A fresh Experiment 7 (L1 with a bootstrap-calibrated F test) would start with Opus planning, only if the owner asks.
+Git: the owner runs it.
+```
+
+---
+
 ## MODEL HANDOFF — H4: L1 built and audited, G0-3 NOT met (1 of 7 checks) -> Opus reviews (2026-10-11)
 
 ```text

@@ -147,7 +147,7 @@ N_big = 200000, N_J = 6000; same datasets, 2PL fits and thresholds as Stage 0; B
 
 - All 20 fits converged. The D22 Newton decrement is 1e-9 or smaller everywhere except B2-FB1 in E2 (`hessian_not_pd`, nan; the null cell, as for L0).
 - Flags (B2-FB1): E1 and E2 `tau_D_not_identified(kappa~0)`, `secondary_optima_present`, `single_start_at_best` (E2 also `hessian_not_pd`); E3 `boundary:tau_F@upper`, `secondary_optima_present`; E4 `single_start_at_best`, `secondary_optima_present`; E5 none.
-- Godambe sandwich scores: mean/sd 0.026-0.038 (limit 0.04 as in Stage 0).
+- Godambe sandwich scores: mean/sd 0.026-0.038 (descriptive; Stage 0: <= 0.04).
 - SE of sigma2_F, L1 / 2PL at N = 1000: E1 1.09, E2 1.23, E5 1.09 (E3 0.40, E4 0.65, where the 2PL value is the misattributed one). corr(sigma2_F, kappa): +0.41 (E1), +0.23 (E2), +0.51 (E3), +0.58 (E4), +0.52 (E5).
 - Fit runtimes: B2-FB1 627-746 s, B1-FB1 513-895 s (1.7-4.5 x the 2PL B2 fit on the same pair counts); a likelihood-and-gradient evaluation takes 0.070 s (L0 0.043 s).
 - Cost of Stage 0b: Step 1 seconds; Step 2 about 2.5 CPU-h (34 min wall, 5 workers).
